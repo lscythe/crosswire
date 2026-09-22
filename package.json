@@ -1,0 +1,17 @@
+{
+  "name": "crosswire",
+  "private": true,
+  "packageManager": "pnpm@10.12.1",
+  "scripts": {
+    "dev:web": "pnpm --filter @crosswire/web dev",
+    "test:web": "pnpm --filter @crosswire/web test",
+    "dev:gateway": "go run ./services/gateway/cmd/gateway",
+    "test:gateway": "go test ./services/gateway/...",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}
