@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,13 +12,13 @@ import (
 	"time"
 )
 
-type Route struct{ ConnectionID, BaseURL, Ciphertext, UpstreamModel string }
+type Route struct{ ConnectionID, ConnectionName, BaseURL, Ciphertext, UpstreamModel string }
 
 func LoadRoutes(ctx context.Context, db *sql.DB, userID, alias string) ([]Route, error) {
-	rows, err := db.QueryContext(ctx, `SELECT c.id, c.base_url, c.api_key_ciphertext, r.upstream_model
+	rows, err := db.QueryContext(ctx, `SELECT c.id, c.name, c.base_url, c.api_key_ciphertext, r.upstream_model
 		FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id
 		JOIN connections c ON c.id = r.connection_id
-		WHERE (cfg.owner_user_id = $1 OR c.visibility = 'public') AND cfg.is_default AND r.model_alias = $2 AND c.enabled
+		WHERE cfg.owner_user_id = $1 AND (c.owner_user_id = $1 OR c.visibility = 'public') AND cfg.is_default AND r.model_alias = $2 AND c.enabled
 		ORDER BY r.priority`, userID, alias)
 	if err != nil {
 		return nil, err
@@ -26,7 +27,7 @@ func LoadRoutes(ctx context.Context, db *sql.DB, userID, alias string) ([]Route,
 	var routes []Route
 	for rows.Next() {
 		var route Route
-		if err := rows.Scan(&route.ConnectionID, &route.BaseURL, &route.Ciphertext, &route.UpstreamModel); err != nil {
+		if err := rows.Scan(&route.ConnectionID, &route.ConnectionName, &route.BaseURL, &route.Ciphertext, &route.UpstreamModel); err != nil {
 			return nil, err
 		}
 		routes = append(routes, route)
@@ -67,12 +68,25 @@ func RecordUsage(ctx context.Context, db *sql.DB, userID string, route Route, mo
 	_, _ = db.ExecContext(ctx, `INSERT INTO usage_events(user_id, connection_id, model, status, latency_ms) VALUES ($1, $2, $3, $4, $5)`, userID, route.ConnectionID, model, status, time.Since(started).Milliseconds())
 }
 
-func RecordRequest(ctx context.Context, db *sql.DB, requestID, userID string, route *Route, model string, status int, started time.Time, reason string) {
+func RecordRequest(ctx context.Context, db *sql.DB, requestID, userID string, route *Route, model string, status int, started time.Time, reason string, attempts ...Attempt) {
 	var connectionID any
 	if route != nil {
 		connectionID = route.ConnectionID
 	}
-	_, _ = db.ExecContext(ctx, `INSERT INTO request_logs(request_id, user_id, connection_id, model, status, latency_ms, error_reason) VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))`, requestID, userID, connectionID, model, status, time.Since(started).Milliseconds(), reason)
+	if attempts == nil {
+		attempts = []Attempt{}
+	}
+	trace, _ := json.Marshal(attempts)
+	_, _ = db.ExecContext(ctx, `INSERT INTO request_logs(request_id, user_id, connection_id, model, status, latency_ms, error_reason, attempts) VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), $8)`, requestID, userID, connectionID, model, status, time.Since(started).Milliseconds(), reason, string(trace))
 }
 
 var ErrNoRoute = fmt.Errorf("no route")
+
+// Attempt contains only safe routing metadata, never provider bodies or credentials.
+type Attempt struct {
+	ConnectionID   string `json:"connectionId"`
+	ConnectionName string `json:"connectionName"`
+	UpstreamModel  string `json:"upstreamModel"`
+	Status         int    `json:"status"`
+	Reason         string `json:"reason"`
+}

@@ -58,6 +58,7 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			http.Error(w, "no route", 404)
 			return
 		}
+		var attempts []provider.Attempt
 		for _, route := range routes {
 			var raw map[string]any
 			if json.Unmarshal(body, &raw) != nil {
@@ -67,19 +68,33 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			raw["model"] = route.UpstreamModel
 			forwardBody, _ := json.Marshal(raw)
 			response, forwardErr := provider.Forward(req.Context(), http.DefaultClient, route, forwardBody, payload.Stream)
+			attempt := provider.Attempt{ConnectionID: route.ConnectionID, ConnectionName: route.ConnectionName, UpstreamModel: route.UpstreamModel}
 			if forwardErr != nil {
+				attempt.Reason = "transport error"
+				attempts = append(attempts, attempt)
 				continue
 			}
+			attempt.Status = response.StatusCode
 			provider.RecordUsage(req.Context(), conn, auth.UserID(req.Context()), route, payload.Model, response.StatusCode, started)
 			if response.StatusCode >= 500 {
 				response.Body.Close()
+				attempt.Reason = "upstream server error"
+				attempts = append(attempts, attempt)
 				continue
 			}
-			_ = provider.CopyResponse(w, response)
-			provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), &route, payload.Model, response.StatusCode, started, "")
+			attempt.Reason = "response served"
+			reason := ""
+			if err := provider.CopyResponse(w, response); err != nil {
+				reason = "upstream response interrupted"
+				attempt.Reason = reason
+			}
+			attempts = append(attempts, attempt)
+			logCtx, cancel := context.WithTimeout(context.WithoutCancel(req.Context()), 2*time.Second)
+			defer cancel()
+			provider.RecordRequest(logCtx, conn, requestID, auth.UserID(req.Context()), &route, payload.Model, response.StatusCode, started, reason, attempts...)
 			return
 		}
-		provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 502, started, "all routes failed")
+		provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 502, started, "all routes failed", attempts...)
 		http.Error(w, "all routes failed", 502)
 	}))
 	r.Handle("POST /v1/chat/completions", chat)

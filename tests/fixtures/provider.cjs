@@ -1,6 +1,9 @@
 // Local-only deterministic provider for Connections browser checks.
 const http = require('node:http');
 const server = http.createServer(async (request, response) => {
+  if (request.url.startsWith('/fail/')) { response.writeHead(503).end(); return; }
+  if (request.url.startsWith('/deny/')) { response.writeHead(401).end(); return; }
+  if (request.url.startsWith('/drop/')) { request.socket.destroy(); return; }
   if (request.headers.authorization !== 'Bearer connection-test-secret') {
     response.writeHead(401).end();
     return;

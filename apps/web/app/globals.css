@@ -33,3 +33,5 @@ a { color: inherit; }
 .connection-card input { min-width: 0; }
 .connection-card button:disabled { cursor: wait; opacity: .6; }
 .nav { flex-wrap: wrap; }
+.route-row { min-width: 0; margin: 20px 0; padding: 16px; border: 1px solid #a9b1b5; }
+.connection-card li { overflow-wrap: anywhere; }
