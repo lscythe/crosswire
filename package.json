@@ -5,8 +5,8 @@
   "scripts": {
     "dev:web": "pnpm --filter @crosswire/web dev",
     "test:web": "pnpm --filter @crosswire/web test",
-    "dev:gateway": "go run ./services/gateway/cmd/gateway",
-    "test:gateway": "go test ./services/gateway/...",
+    "dev:gateway": "cd services/gateway && go run ./cmd/gateway",
+    "test:gateway": "cd services/gateway && go test ./...",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

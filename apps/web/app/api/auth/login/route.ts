@@ -10,7 +10,8 @@ export async function POST(request: Request) {
   if (!body.success) return NextResponse.json({ error: "invalid credentials" }, { status: 400 });
   const result = await query<{ id: string; email: string; name: string; role: "admin" | "member"; password_hash: string; disabled_at: Date | null }>("SELECT id, email, name, role, password_hash, disabled_at FROM users WHERE email = $1", [body.data.email]);
   const user = result.rows[0];
-  if (!user || user.disabled_at || !(await verifyPassword(user.password_hash, body.data.password))) return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
+  if (!user || !(await verifyPassword(user.password_hash, body.data.password))) return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
+  if (user.disabled_at) return NextResponse.json({ error: "account disabled" }, { status: 403 });
   const token = await createSession(sessionRepository, user.id);
   const response = NextResponse.json({ id: user.id, email: user.email, name: user.name, role: user.role });
   response.cookies.set(sessionCookie(token, new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)));

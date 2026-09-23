@@ -8,7 +8,7 @@ import (
 func TestHealth(t *testing.T) {
 	req := httptest.NewRequest("GET", "/health", nil)
 	res := httptest.NewRecorder()
-	New().ServeHTTP(res, req)
+	New(nil, nil).ServeHTTP(res, req)
 	if res.Code != 200 {
 		t.Fatalf("status = %d, want 200", res.Code)
 	}

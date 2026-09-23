@@ -2,6 +2,7 @@ FROM golang:1.24-alpine AS build
 WORKDIR /src
 COPY services/gateway/go.mod services/gateway/
 COPY services/gateway services/gateway
+COPY db/migrations db/migrations
 WORKDIR /src/services/gateway
 RUN CGO_ENABLED=0 go build -o /out/gateway ./cmd/gateway
 
@@ -9,5 +10,7 @@ FROM alpine:3.21
 RUN adduser -D -H -u 10001 app
 USER app
 COPY --from=build /out/gateway /gateway
+COPY --from=build /src/db/migrations /migrations
+ENV MIGRATIONS_DIR=/migrations
 EXPOSE 8080
 ENTRYPOINT ["/gateway"]
