@@ -1,21 +1,47 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 
-export function ConnectionForm() {
+type EditableConnection = { id: string; name: string; base_url: string; visibility: "private" | "public" };
+
+export function ConnectionForm({ connection, onSaved }: { connection?: EditableConnection; onSaved?: () => void }) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/connections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: form.get("name"), baseUrl: form.get("baseUrl"), apiKey: form.get("apiKey"), visibility: form.get("visibility") }) });
-    setMessage(response.ok ? "Connection created" : "Could not create connection");
-    if (response.ok) event.currentTarget.reset();
+    const element = event.currentTarget;
+    const form = new FormData(element);
+    const apiKey = form.get("apiKey");
+    setPending(true);
+    setMessage("");
+    setError("");
+    try {
+      const response = await fetch(connection ? `/api/connections/${connection.id}` : "/api/connections", { method: connection ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: form.get("name"), baseUrl: form.get("baseUrl"), ...(apiKey ? { apiKey } : {}), visibility: form.get("visibility") }) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error ?? "Could not save connection");
+      if (!connection) element.reset();
+      else (element.elements.namedItem("apiKey") as HTMLInputElement).value = "";
+      setMessage(connection ? "Changes saved" : "Connection created");
+      onSaved?.();
+      router.refresh();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save connection");
+    } finally {
+      setPending(false);
+    }
   }
   return <form onSubmit={submit}>
-    <label className="field">Name<input name="name" required /></label>
-    <label className="field">Base URL<input name="baseUrl" type="url" placeholder="https://api.example.com/v1" required /></label>
-    <label className="field">API key<input name="apiKey" type="password" required /></label>
-    <label className="field">Visibility<select name="visibility" defaultValue="private"><option value="private">Private</option><option value="public">Public</option></select></label>
-    <button className="primary">Add connection</button>{message && <p role="status">{message}</p>}
+    <fieldset disabled={pending} className="connection-fields">
+      <label className="field">Name<input name="name" required maxLength={100} defaultValue={connection?.name} /></label>
+      <label className="field">Base URL<input name="baseUrl" type="url" placeholder="https://api.example.com/v1" required defaultValue={connection?.base_url} /></label>
+      <label className="field">{connection ? "Replacement API key (optional)" : "API key"}<input name="apiKey" type="password" autoComplete="new-password" required={!connection} maxLength={4096} /></label>
+      {connection && <p>Leave the key blank to keep the saved secret.</p>}
+      <label className="field">Visibility<select name="visibility" defaultValue={connection?.visibility ?? "private"}><option value="private">Private</option><option value="public">Public</option></select></label>
+      <button className="primary">{pending ? "Saving..." : connection ? "Save changes" : "Add connection"}</button>
+    </fieldset>
+    {message && <p role="status">{message}</p>}{error && <p className="error" role="alert">{error}</p>}
   </form>;
 }

@@ -17,3 +17,19 @@ a { color: inherit; }
   .topbar { border-color: #434c4e; }
   .field input { background: #15191a; color: #e8eceb; border-color: #667174; }
 }
+
+/* Connections use the existing neutral palette and native disclosure controls. */
+.connection-card { border: 1px solid #a9b1b5; border-radius: 6px; padding: 20px; margin: 20px 0; min-width: 0; }
+.connections-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 20px; align-items: start; }
+.connections-grid .connection-card { margin: 0; }
+.connection-card h3 { margin-top: 0; }
+.connection-card details { margin-top: 18px; }
+.connection-card summary { cursor: pointer; padding: 6px 0; }
+.connection-card pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.connection-url { overflow-wrap: anywhere; }
+.connection-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.connection-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.connection-card button, .connection-card select { font: inherit; padding: 8px 12px; }
+.connection-card input { min-width: 0; }
+.connection-card button:disabled { cursor: wait; opacity: .6; }
+.nav { flex-wrap: wrap; }

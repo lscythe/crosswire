@@ -1,6 +1,6 @@
 # Crosswire
 
-Self-hosted team AI gateway. The foundation currently provides login, admin-created users with mandatory first-login password changes, personal API keys, and a protected `/v1/models` endpoint. Provider connections and routing are next.
+Self-hosted team AI gateway. Includes admin-created users, mandatory first-login password changes, private/shared provider connections, routing, model probes, usage, and personal API keys.
 
 ## Local run
 
@@ -19,6 +19,22 @@ curl -X POST http://localhost:3000/api/auth/bootstrap \
 ```
 
 Open `http://localhost:3000/login`. Run `./scripts/check-foundation.sh` with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` set to verify the API flow.
+
+## Connections browser check
+
+With the local Compose stack running, start the deterministic test provider in one terminal (it stops after five minutes):
+
+```bash
+docker compose --env-file .env.example -f infra/compose/docker-compose.yml exec -T web node < tests/fixtures/provider.cjs
+```
+
+Then run in another terminal:
+
+```bash
+TEST_PROVIDER_URL=http://web:4100/v1 pnpm test:e2e
+```
+
+This checks connection editing, secret preservation, sharing, permission enforcement, and persisted probe results without external provider calls. Set the bootstrap admin environment variables when using custom credentials.
 
 ## Dokploy
 

@@ -1,13 +1,23 @@
-import { redirect } from "next/navigation";
 import { pageUser } from "../../lib/auth";
 import { query } from "../../lib/db";
 import { ConnectionForm } from "../../components/connection-form";
+import { ConnectionCard, type ConnectionView } from "../../components/connection-card";
+import { Nav } from "../../components/nav";
 
 export default async function ConnectionsPage() {
   const user = await pageUser();
-  if (!user) redirect("/login");
-  const result = user.role === "admin"
-    ? await query("SELECT id, name, base_url, visibility, enabled, last_test_status FROM connections ORDER BY created_at DESC")
-    : await query("SELECT id, name, base_url, visibility, enabled, last_test_status FROM connections WHERE visibility = 'public' OR owner_user_id = $1 ORDER BY created_at DESC", [user.id]);
-  return <section><h2>Connections</h2><ConnectionForm /><ul>{result.rows.map((connection) => <li key={connection.id}>{connection.name} <small>{connection.base_url} · {connection.visibility} · {connection.enabled ? "enabled" : "disabled"} · {connection.last_test_status ?? "untested"}</small></li>)}</ul></section>;
+  const result = await query<ConnectionView & { owner_user_id: string }>(`
+    SELECT c.id, c.owner_user_id, c.name, c.base_url, c.visibility, c.enabled, c.last_test_status,
+      (SELECT json_build_object('requestedModel', p.requested_model, 'returnedModel', p.claimed_model,
+        'identityConfidence', p.identity_confidence, 'status', p.overall_status,
+        'checks', COALESCE((SELECT json_agg(json_build_object('capability', r.capability, 'passed', r.passed, 'evidence', r.evidence)) FROM probe_results r WHERE r.probe_run_id = p.id), '[]'::json))
+       FROM probe_runs p WHERE p.connection_id = c.id ORDER BY p.created_at DESC LIMIT 1) AS "latestProbe"
+    FROM connections c WHERE $2 = 'admin' OR c.visibility = 'public' OR c.owner_user_id = $1
+    ORDER BY c.created_at DESC`, [user.id, user.role]);
+  return <main className="shell"><Nav role={user.role} /><h1>Connections</h1>
+    <p>Manage provider access and check model behavior.</p>
+    <details className="connection-card"><summary>Add connection</summary><ConnectionForm /></details>
+    {result.rows.length === 0 && <p>No connections available. Add your first provider above.</p>}
+    <div className="connections-grid">{result.rows.map(({ owner_user_id, ...connection }) => <ConnectionCard key={connection.id} connection={{ ...connection, canManage: user.role === "admin" || owner_user_id === user.id }} />)}</div>
+  </main>;
 }

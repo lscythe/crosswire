@@ -7,6 +7,8 @@ export const connectionSchema = z.object({
   visibility: z.enum(["private", "public"]).default("private"),
 });
 
+export const connectionUpdateSchema = connectionSchema.partial().extend({ enabled: z.boolean().optional() }).strict().refine((value) => Object.keys(value).length > 0);
+
 export function isSafeProviderUrl(value: string) {
   const url = new URL(value);
   const host = url.hostname.toLowerCase();
