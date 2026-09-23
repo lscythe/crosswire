@@ -17,6 +17,13 @@ export async function POST(request: Request, context: Params) {
   const connection = await query<{ owner_user_id: string; base_url: string; api_key_ciphertext: string; visibility: string }>("SELECT owner_user_id, base_url, api_key_ciphertext, visibility FROM connections WHERE id = $1 AND enabled", [id]);
   const row = connection.rows[0];
   if (!row || (user.role !== "admin" && row.owner_user_id !== user.id && row.visibility !== "public")) return NextResponse.json({ error: "not found" }, { status: 404 });
+  let retryAfter: number;
+  try {
+    const reservation = await query<{ retry_after: number }>("SELECT reserve_connection_requests($1, $2, 2) AS retry_after", [id, user.id]);
+    retryAfter = reservation.rows[0].retry_after;
+  } catch { return NextResponse.json({ error: "quota check unavailable" }, { status: 503 }); }
+  if (retryAfter < 0) return NextResponse.json({ error: "connection unavailable" }, { status: 404 });
+  if (retryAfter > 0) return NextResponse.json({ error: "public connection quota exceeded", retryAfter }, { status: 429, headers: { "Retry-After": String(retryAfter) } });
   const checks: ProbeCheck[] = [];
   let returnedModel: string | null = null;
   let metadata: Record<string, unknown> = {};

@@ -52,3 +52,27 @@ import { POST as probe } from "./probe/route";
 test.each([null, { model: 123 }, { model: " " }, { model: "x".repeat(201) }])("probe validates model input: %j", async (body) => {
   expect((await probe(new Request("http://localhost", { method: "POST", body: JSON.stringify(body) }), context)).status).toBe(400);
 });
+
+test.each([{ requestsPerMinute: 0 }, { requestsPerDay: -1 }, { requestsPerMinute: 1.5 }, { requestsPerDay: 1000001 }])("rejects invalid quota settings: %j", async body => {
+  expect((await PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify(body) }), context)).status).toBe(400);
+});
+test("unrelated connection edits preserve saved quota limits", async () => {
+  await PATCH(new Request("http://localhost", { method: "PATCH", body: '{"enabled":false}' }), context);
+  expect(vi.mocked(query).mock.calls[1][1]?.slice(5, 7)).toEqual([null, null]);
+});
+test("limited probes return retry information without contacting the provider", async () => {
+  vi.mocked(query).mockResolvedValueOnce({ rows: [{ owner_user_id: "owner", visibility: "public" }] } as never)
+    .mockResolvedValueOnce({ rows: [{ retry_after: 45 }] } as never);
+  const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+  const response = await probe(new Request("http://localhost", { method: "POST", body: '{"model":"test"}' }), context);
+  expect(response.status).toBe(429);
+  expect(response.headers.get("retry-after")).toBe("45");
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+test("probes fail closed when quota storage is unavailable", async () => {
+  vi.mocked(query).mockResolvedValueOnce({ rows: [{ owner_user_id: "owner", visibility: "public" }] } as never)
+    .mockRejectedValueOnce(new Error("database unavailable"));
+  const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+  expect((await probe(new Request("http://localhost", { method: "POST", body: '{"model":"test"}' }), context)).status).toBe(503);
+  expect(fetchMock).not.toHaveBeenCalled();
+});

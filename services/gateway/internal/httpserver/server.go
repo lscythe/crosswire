@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -68,7 +69,28 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			return
 		}
 		var attempts []provider.Attempt
+		limitedRetry := 0
+		quotaUnavailable := false
 		for _, route := range routes {
+			attempt := provider.Attempt{ConnectionID: route.ConnectionID, ConnectionName: route.ConnectionName, UpstreamModel: route.UpstreamModel}
+			var retryAfter int
+			quotaErr := conn.QueryRowContext(req.Context(), "SELECT reserve_connection_requests($1, $2, 1)", route.ConnectionID, auth.UserID(req.Context())).Scan(&retryAfter)
+			if quotaErr != nil || retryAfter != 0 {
+				switch {
+				case quotaErr != nil:
+					attempt.Status, attempt.Reason = 503, "quota check unavailable"
+					quotaUnavailable = true
+				case retryAfter < 0:
+					attempt.Status, attempt.Reason = 404, "connection unavailable"
+				default:
+					attempt.Status, attempt.Reason = 429, "public connection quota exceeded"
+					if limitedRetry == 0 || retryAfter < limitedRetry {
+						limitedRetry = retryAfter
+					}
+				}
+				attempts = append(attempts, attempt)
+				continue
+			}
 			var raw map[string]any
 			if json.Unmarshal(body, &raw) != nil {
 				http.Error(w, "invalid request", 400)
@@ -77,7 +99,6 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			raw["model"] = route.UpstreamModel
 			forwardBody, _ := json.Marshal(raw)
 			response, forwardErr := provider.Forward(req.Context(), http.DefaultClient, route, forwardBody, payload.Stream)
-			attempt := provider.Attempt{ConnectionID: route.ConnectionID, ConnectionName: route.ConnectionName, UpstreamModel: route.UpstreamModel}
 			if forwardErr != nil {
 				attempt.Reason = "transport error"
 				attempts = append(attempts, attempt)
@@ -103,8 +124,17 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			provider.RecordRequest(logCtx, conn, requestID, auth.UserID(req.Context()), &route, payload.Model, response.StatusCode, started, reason, attempts...)
 			return
 		}
-		provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 502, started, "all routes failed", attempts...)
-		http.Error(w, "all routes failed", 502)
+		status, reason := 502, "all routes failed"
+		if limitedRetry > 0 {
+			status, reason = 429, "public connection quota exceeded"
+			w.Header().Set("Retry-After", strconv.Itoa(limitedRetry))
+		}
+		if quotaUnavailable {
+			status, reason = 503, "quota check unavailable"
+			w.Header().Del("Retry-After")
+		}
+		provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, status, started, reason, attempts...)
+		http.Error(w, reason, status)
 	}))
 	r.Handle("POST /v1/chat/completions", chat)
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

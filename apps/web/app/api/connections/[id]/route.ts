@@ -19,7 +19,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (!parsed.success) return NextResponse.json({ error: "invalid connection" }, { status: 400 });
   const body = parsed.data;
   if (body.baseUrl && !isSafeProviderUrl(body.baseUrl)) return NextResponse.json({ error: "provider URL is not allowed" }, { status: 400 });
-  await query("UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), api_key_ciphertext = COALESCE($3, api_key_ciphertext), visibility = COALESCE($4, visibility), enabled = COALESCE($5, enabled), updated_at = now() WHERE id = $6", [body.name ?? null, body.baseUrl ?? null, body.apiKey ? encryptSecret(body.apiKey) : null, body.visibility ?? null, body.enabled ?? null, id]);
+  await query("UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), api_key_ciphertext = COALESCE($3, api_key_ciphertext), visibility = COALESCE($4, visibility), enabled = COALESCE($5, enabled), requests_per_minute = COALESCE($6, requests_per_minute), requests_per_day = COALESCE($7, requests_per_day), updated_at = now() WHERE id = $8", [body.name ?? null, body.baseUrl ?? null, body.apiKey ? encryptSecret(body.apiKey) : null, body.visibility ?? null, body.enabled ?? null, body.requestsPerMinute ?? null, body.requestsPerDay ?? null, id]);
   await recordAudit(user.id, "connection.updated", "connection", id);
   return NextResponse.json({ ok: true });
 }

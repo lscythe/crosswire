@@ -6,7 +6,7 @@ import { ConnectionForm } from "./connection-form";
 import type { ProbeCheck } from "../lib/probe";
 
 type ProbeResult = { requestedModel: string; returnedModel: string | null; identityConfidence: string; status: string; checks: ProbeCheck[] };
-export type ConnectionView = { id: string; name: string; base_url: string; visibility: "private" | "public"; enabled: boolean; last_test_status: string | null; canManage: boolean; latestProbe: ProbeResult | null };
+export type ConnectionView = { id: string; name: string; base_url: string; visibility: "private" | "public"; enabled: boolean; requests_per_minute: number; requests_per_day: number; quotaUsage: Array<{ user: string; used: number }>; last_test_status: string | null; canManage: boolean; latestProbe: ProbeResult | null };
 
 export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   const router = useRouter();
@@ -50,6 +50,9 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
     <h3 id={`connection-${connection.id}`}>{connection.name}</h3>
     <p className="connection-url">{connection.base_url}</p>
     <p>{connection.visibility === "public" ? "Public" : "Private"} · {connection.enabled ? "Enabled" : "Disabled"} · Last test: {connection.last_test_status ?? "untested"}</p>
+    {connection.visibility === "public" && <section aria-label="Public connection limits"><p>Per user: {connection.requests_per_minute} requests/minute · {connection.requests_per_day} requests/day (UTC).</p><p>Upstream attempts count even if they fail. Probes reserve two requests. Discovery and health checks do not count.</p>
+      <details><summary>Daily quota usage</summary>{connection.quotaUsage.length ? <ul>{connection.quotaUsage.map(item => <li key={item.user}>{item.user}: {item.used} / {connection.requests_per_day}</li>)}</ul> : <p>No quota used today.</p>}</details>
+    </section>}
     {connection.canManage ? <>
       <div className="connection-actions">
         <button type="button" disabled={!!pending} onClick={() => act("toggle")}>{pending === "toggle" ? "Saving..." : connection.enabled ? "Disable" : "Enable"}</button>

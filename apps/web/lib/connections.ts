@@ -4,6 +4,8 @@ export const connectionSchema = z.object({
   name: z.string().trim().min(1).max(100),
   baseUrl: z.string().url().refine((value) => /^https?:\/\//i.test(value), "base URL must use HTTP or HTTPS").transform((value) => value.replace(/\/$/, "")),
   apiKey: z.string().min(1).max(4096),
+  requestsPerMinute: z.number().int().min(1).max(10000).default(60),
+  requestsPerDay: z.number().int().min(1).max(1000000).default(1000),
   visibility: z.enum(["private", "public"]).default("private"),
 });
 
