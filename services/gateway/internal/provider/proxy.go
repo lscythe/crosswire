@@ -67,4 +67,12 @@ func RecordUsage(ctx context.Context, db *sql.DB, userID string, route Route, mo
 	_, _ = db.ExecContext(ctx, `INSERT INTO usage_events(user_id, connection_id, model, status, latency_ms) VALUES ($1, $2, $3, $4, $5)`, userID, route.ConnectionID, model, status, time.Since(started).Milliseconds())
 }
 
+func RecordRequest(ctx context.Context, db *sql.DB, requestID, userID string, route *Route, model string, status int, started time.Time, reason string) {
+	var connectionID any
+	if route != nil {
+		connectionID = route.ConnectionID
+	}
+	_, _ = db.ExecContext(ctx, `INSERT INTO request_logs(request_id, user_id, connection_id, model, status, latency_ms, error_reason) VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))`, requestID, userID, connectionID, model, status, time.Since(started).Milliseconds(), reason)
+}
+
 var ErrNoRoute = fmt.Errorf("no route")

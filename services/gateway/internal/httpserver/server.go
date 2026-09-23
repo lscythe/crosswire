@@ -32,6 +32,7 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 	})))
 	chat := auth.Middleware(conn, cache, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		started := time.Now()
+		requestID := w.Header().Get("X-Request-ID")
 		body, err := io.ReadAll(io.LimitReader(req.Body, 8<<20))
 		if err != nil {
 			http.Error(w, "invalid request", 400)
@@ -42,15 +43,18 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 			Stream bool   `json:"stream"`
 		}
 		if json.Unmarshal(body, &payload) != nil || payload.Model == "" {
+			provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 400, started, "model is required")
 			http.Error(w, "model is required", 400)
 			return
 		}
 		routes, err := provider.LoadRoutes(req.Context(), conn, auth.UserID(req.Context()), payload.Model)
 		if err != nil {
+			provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 503, started, "routing unavailable")
 			http.Error(w, "routing unavailable", 503)
 			return
 		}
 		if len(routes) == 0 {
+			provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 404, started, "no route")
 			http.Error(w, "no route", 404)
 			return
 		}
@@ -72,8 +76,10 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 				continue
 			}
 			_ = provider.CopyResponse(w, response)
+			provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), &route, payload.Model, response.StatusCode, started, "")
 			return
 		}
+		provider.RecordRequest(req.Context(), conn, requestID, auth.UserID(req.Context()), nil, payload.Model, 502, started, "all routes failed")
 		http.Error(w, "all routes failed", 502)
 	}))
 	r.Handle("POST /v1/chat/completions", chat)
