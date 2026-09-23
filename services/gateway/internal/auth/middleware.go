@@ -41,7 +41,7 @@ func Middleware(conn *sql.DB, _ *redis.Client, next http.Handler) http.Handler {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		// ponytail: last_used_at stays empty until the usage-event writer lands; no per-request write on the hot path.
+		_, _ = conn.ExecContext(r.Context(), `UPDATE api_keys SET last_used_at = now() WHERE key_hash = $1 AND (last_used_at IS NULL OR last_used_at < now() - interval '1 minute')`, hash[:])
 		r = r.WithContext(context.WithValue(r.Context(), UserIDKey, id))
 		next.ServeHTTP(w, r)
 	})

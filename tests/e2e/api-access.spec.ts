@@ -27,10 +27,13 @@ test("personal keys and model discovery follow active routing permissions", asyn
     expect(response.headers()['cache-control']).toBe('no-store');
     const key = await response.json(); keyId = key.id;
     await expect(member.getByLabel('New API key')).toHaveValue(key.key);
+    await member.getByRole('button', { name: 'Test request', exact: true }).click();
+    await expect(member.getByText(/Gateway reachable/)).toBeVisible();
+    await expect(member.getByText(/Last used .*Never/)).toHaveCount(0);
     const gateway = process.env.GATEWAY_URL ?? 'http://localhost:8080';
     const models = () => context.request.get(`${gateway}/v1/models`, { headers: { Authorization: `Bearer ${key.key}` } });
     expect(await (await models()).json()).toEqual({ object: 'list', data: [] });
-    const connection = await (await page.request.post('/api/connections', { data: { name: 'Discovery only', baseUrl: 'https://example.com/v1', apiKey: 'unused-fixture-secret', visibility: 'public' } })).json();
+    const connection = await (await page.request.post('/api/connections', { data: { name: 'Discovery only', baseUrl: process.env.TEST_PROVIDER_URL ?? 'http://web:4100/v1', apiKey: 'connection-test-secret', visibility: 'public' } })).json();
     connectionId = connection.id;
     const route = { modelAlias: 'team-chat', connectionId, upstreamModel: 'provider-model', priority: 0 };
     const config = await (await context.request.post(`${base}/api/routing-configs`, { data: { name: 'Discovery', isDefault: true, routes: [route, { ...route, priority: 1 }] } })).json();
@@ -42,6 +45,24 @@ test("personal keys and model discovery follow active routing permissions", asyn
     await expect(member.getByLabel('New API key')).toHaveCount(0);
     await expect(member.getByText('team-chat', { exact: true })).toBeVisible();
     expect(await member.locator('pre').innerText()).toContain('$CROSSWIRE_API_KEY');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    for (const [language, text] of [['Python', 'from openai import OpenAI'], ['Node', 'import OpenAI from "openai"']]) {
+      await member.getByRole('button', { name: language, exact: true }).click();
+      await expect(member.locator('pre')).toContainText(text);
+      await member.getByRole('button', { name: 'Copy example', exact: true }).click();
+      expect(await member.evaluate(() => navigator.clipboard.readText())).toBe(await member.locator('pre').innerText());
+    }
+    await member.getByLabel('Test request with key').fill(key.key);
+    await member.getByRole('button', { name: 'Test request', exact: true }).click();
+    await expect(member.getByText(/Gateway reachable. 1 aliases/)).toBeVisible();
+    await member.getByRole('button', { name: 'Check health', exact: true }).click();
+    await expect(member.getByText(/Discovery only · healthy/)).toBeVisible();
+    expect(await member.locator('body').innerText()).not.toContain('connection-test-secret');
+    const failedUrl = (process.env.TEST_PROVIDER_URL ?? 'http://web:4100/v1').replace(/\/v1$/, '/fail');
+    await page.request.patch(`/api/connections/${connectionId}`, { data: { baseUrl: failedUrl } });
+    await member.getByRole('button', { name: 'Check health', exact: true }).click();
+    await expect(member.getByText(/Discovery only · degraded.*HTTP 503/)).toBeVisible();
+    await page.request.patch(`/api/connections/${connectionId}`, { data: { baseUrl: process.env.TEST_PROVIDER_URL ?? 'http://web:4100/v1' } });
     expect(await member.locator('body').innerText()).not.toContain(key.key);
     expect(JSON.stringify(await (await context.request.get(`${base}/api/keys`)).json())).not.toContain(key.key);
     expect((await page.request.delete(`/api/keys/${keyId}`)).status()).toBe(404);
