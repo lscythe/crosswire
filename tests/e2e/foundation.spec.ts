@@ -11,6 +11,21 @@ test("admin can sign in and out", async ({ page }) => {
   await expect(page.getByText("Team gateway activity · Last 24 hours", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent requests" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Latest model probes" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Dashboard", exact: true })).toHaveAttribute("aria-current", "page");
+  const toDark = page.getByRole("button", { name: "Switch to dark theme" });
+  if (await toDark.count()) await toDark.click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.screenshot({ path: "test-results/dashboard-dark.png", fullPage: true });
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await expect(page.locator("html")).toHaveClass(/light/);
+  for (const name of ["API access", "Connections", "Routing", "Usage", "Probes", "Team", "Dashboard"]) {
+    const link = page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name, exact: true });
+    await link.click();
+    await expect(link).toHaveAttribute("aria-current", "page");
+    await expect(page.locator("main h1")).toBeVisible();
+  }
   await page.getByRole("link", { name: "My usage", exact: true }).click();
   await expect(page).toHaveURL(/scope=mine/);
   await expect(page.getByText("Your gateway activity · Last 24 hours", { exact: true })).toBeVisible();

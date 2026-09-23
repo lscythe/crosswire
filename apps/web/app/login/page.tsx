@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -31,12 +32,12 @@ export default function LoginPage() {
   }
 
   return <main className="auth">
-    <h1>Crosswire</h1>
+    <div className="auth-brand">Crosswire / Team gateway</div><h1>Welcome back</h1><p>Sign in to your workspace.</p>
     <form onSubmit={submit}>
       <label className="field">Email<input name="email" type="email" autoComplete="username" required /></label>
       <label className="field">Password<input name="password" type="password" autoComplete="current-password" required /></label>
       {error && <p className="error" role="alert">{error}</p>}
-      <button className="primary" disabled={pending}>{pending ? "Signing in..." : "Sign in"}</button>
+      <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Signing in..." : "Sign in"}</Button>
     </form>
   </main>;
 }

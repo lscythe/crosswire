@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -48,9 +49,9 @@ export function RoutingForm({ connections, config }: { connections: Array<{ id: 
         {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
       </select></label>
       <label className="field">Upstream model<input required maxLength={200} value={route.upstreamModel} onChange={(event) => update(index, "upstreamModel", event.target.value)} /></label>
-      <div className="connection-actions"><button type="button" disabled={index === 0} onClick={() => move(index, -1)}>Move up</button><button type="button" disabled={index === routes.length - 1} onClick={() => move(index, 1)}>Move down</button><button type="button" disabled={routes.length === 1} onClick={() => setRoutes((current) => current.filter((_, i) => i !== index))}>Remove route</button></div>
+      <div className="connection-actions"><Button variant="secondary" type="button" isDisabled={index === 0} onPress={() => move(index, -1)}>Move up</Button><Button variant="secondary" type="button" isDisabled={index === routes.length - 1} onPress={() => move(index, 1)}>Move down</Button><Button variant="secondary" type="button" isDisabled={routes.length === 1} onPress={() => setRoutes((current) => current.filter((_, i) => i !== index))}>Remove route</Button></div>
     </fieldset>)}
-    <div className="connection-actions"><button type="button" disabled={routes.length >= 100 || !connections.length} onClick={() => setRoutes((current) => [...current, blank()])}>Add route</button><button className="primary" disabled={!connections.length}>{pending ? "Saving..." : "Save routing"}</button></div>
+    <div className="connection-actions"><Button variant="secondary" type="button" isDisabled={routes.length >= 100 || !connections.length} onPress={() => setRoutes((current) => [...current, blank()])}>Add route</Button><Button variant="primary" type="submit" className="primary" isDisabled={!connections.length}>{pending ? "Saving..." : "Save routing"}</Button></div>
     {!connections.length && <p>Add or enable a connection before saving routes.</p>}
   </fieldset>{message && <p role="status">{message}</p>}{error && <p role="alert" className="error">{error}</p>}</form>;
 }

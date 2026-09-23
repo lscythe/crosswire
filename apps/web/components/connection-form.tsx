@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +44,7 @@ export function ConnectionForm({ connection, onSaved }: { connection?: EditableC
       <p>Public connections: limits apply per user, across all their API keys. Daily quota resets at midnight UTC. Private connections are unlimited.</p>
       <label className="field">Requests per minute per user<input name="requestsPerMinute" type="number" required min={1} max={10000} defaultValue={connection?.requests_per_minute ?? 60} /></label>
       <label className="field">Requests per day per user<input name="requestsPerDay" type="number" required min={1} max={1000000} defaultValue={connection?.requests_per_day ?? 1000} /></label>
-      <button className="primary">{pending ? "Saving..." : connection ? "Save changes" : "Add connection"}</button>
+      <Button variant="primary" type="submit" className="primary">{pending ? "Saving..." : connection ? "Save changes" : "Add connection"}</Button>
     </fieldset>
     {message && <p role="status">{message}</p>}{error && <p className="error" role="alert">{error}</p>}
   </form>;

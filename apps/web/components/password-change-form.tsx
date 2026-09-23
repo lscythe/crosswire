@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
@@ -27,6 +28,6 @@ export function PasswordChangeForm() {
     <label className="field">New password<input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required /></label>
     <label className="field">Confirm password<input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required /></label>
     {error && <p role="alert">{error}</p>}
-    <button className="primary" disabled={pending}>{pending ? "Saving..." : "Change password"}</button>
+    <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Saving..." : "Change password"}</Button>
   </form>;
 }

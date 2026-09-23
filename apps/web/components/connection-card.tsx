@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -55,8 +56,8 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
     </section>}
     {connection.canManage ? <>
       <div className="connection-actions">
-        <button type="button" disabled={!!pending} onClick={() => act("toggle")}>{pending === "toggle" ? "Saving..." : connection.enabled ? "Disable" : "Enable"}</button>
-        <button type="button" disabled={!!pending} onClick={() => act("test")}>{pending === "test" ? "Testing..." : "Test connection"}</button>
+        <Button variant="secondary" type="button" isDisabled={!!pending} onPress={() => act("toggle")}>{pending === "toggle" ? "Saving..." : connection.enabled ? "Disable" : "Enable"}</Button>
+        <Button variant="secondary" type="button" isDisabled={!!pending} onPress={() => act("test")}>{pending === "test" ? "Testing..." : "Test connection"}</Button>
       </div>
       <details><summary>Edit connection</summary><ConnectionForm connection={connection} onSaved={() => { setModels([]); setProbe(null); }} /></details>
     </> : <p>Shared connection. Only its owner or an admin can edit or test it.</p>}
@@ -64,7 +65,7 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
       <label className="field">Model<input name="model" list={`models-${connection.id}`} placeholder="Enter a model ID" required maxLength={200} disabled={!connection.enabled || !!pending} /></label>
       <datalist id={`models-${connection.id}`}>{models.map((model) => <option key={model} value={model} />)}</datalist>
       <p>Choose a suggested model after testing, or enter an ID. A probe sends two short requests to the provider.</p>
-      <button type="submit" disabled={!connection.enabled || !!pending}>{pending === "probe" ? "Probing..." : "Run probe"}</button>
+      <Button variant="secondary" type="submit" isDisabled={!connection.enabled || !!pending}>{pending === "probe" ? "Probing..." : "Run probe"}</Button>
       {!connection.enabled && <p>Enable this connection before probing.</p>}
     </form>
     {message && <p role="status">{message}</p>}

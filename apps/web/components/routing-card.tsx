@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RoutingForm } from "./routing-form";
@@ -20,7 +21,7 @@ export function RoutingCard({ config, connections }: { config: RoutingConfig; co
   }
   return <article className="connection-card" aria-label={config.name}><h2>{config.name}</h2><p>{config.is_default ? "Default config" : "Inactive config"}</p>
     <ol>{config.routes.map((route, index) => <li key={index}>{route.modelAlias} · {connections.find((connection) => connection.id === route.connectionId)?.name ?? "Unavailable connection"} · {route.upstreamModel}</li>)}</ol>
-    <div className="connection-actions"><button type="button" disabled={pending || config.is_default} onClick={() => act(false)}>Make default</button><button type="button" disabled={pending} onClick={() => act(true)}>Delete config</button></div>
+    <div className="connection-actions"><Button variant="secondary" type="button" isDisabled={pending || config.is_default} onPress={() => act(false)}>Make default</Button><Button variant="secondary" type="button" isDisabled={pending} onPress={() => act(true)}>Delete config</Button></div>
     {error && <p role="alert">{error}</p>}
     <details><summary>Edit config</summary><RoutingForm key={JSON.stringify(config)} config={config} connections={connections} /></details>
   </article>;

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -31,7 +32,7 @@ export function UserCreateForm() {
   return <><form onSubmit={submit}>
     <label className="field">User email<input name="email" type="email" required /></label>
     <label className="field">Role<select name="role" defaultValue="member"><option value="member">Member</option><option value="admin">Admin</option></select></label>
-    <button className="primary" disabled={pending}>{pending ? "Creating..." : "Create user"}</button>
+    <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Creating..." : "Create user"}</Button>
     {error && <p role="alert">{error}</p>}
-  </form>{credentials && <div role="status"><p>Share these credentials privately. This temporary password is shown only now.</p><p>{credentials.email}</p><label className="field">Temporary password<input readOnly value={credentials.temporaryPassword} /></label><p>A password change is required at first login.</p><button type="button" onClick={() => setCredentials(null)}>Dismiss credentials</button></div>}</>;
+  </form>{credentials && <div role="status"><p>Share these credentials privately. This temporary password is shown only now.</p><p>{credentials.email}</p><label className="field">Temporary password<input readOnly value={credentials.temporaryPassword} /></label><p>A password change is required at first login.</p><Button variant="secondary" type="button" onPress={() => setCredentials(null)}>Dismiss credentials</Button></div>}</>;
 }

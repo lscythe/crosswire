@@ -19,7 +19,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const stats = summary.rows[0];
   const format = (value: number) => value.toLocaleString("en-US");
   return <>
-    <div className="dashboard-heading"><div><h2>Dashboard</h2><p>{personal ? "Your" : "Team"} gateway activity · Last 24 hours</p></div><a href={personal ? "/dashboard?scope=mine" : "/dashboard"}>Refresh</a></div>
+    <div className="dashboard-heading"><div><h1>Dashboard</h1><p>{personal ? "Your" : "Team"} gateway activity · Last 24 hours</p></div><a href={personal ? "/dashboard?scope=mine" : "/dashboard"}>Refresh</a></div>
     <nav className="connection-actions" aria-label="Usage scope"><Link href="/dashboard" aria-current={!personal ? "page" : undefined}>Team usage</Link><Link href="/dashboard?scope=mine" aria-current={personal ? "page" : undefined}>My usage</Link></nav>
     <dl className="dashboard-stats">
       <div><dt>Requests</dt><dd>{format(stats.requests)}</dd></div>
