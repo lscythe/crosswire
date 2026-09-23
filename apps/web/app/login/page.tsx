@@ -20,7 +20,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
       });
       if (!response.ok) throw new Error("Invalid email or password");
-      router.replace("/dashboard");
+      const user = await response.json();
+      router.replace(user.mustChangePassword ? "/change-password" : "/dashboard");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Login failed");

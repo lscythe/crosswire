@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { currentUser } from "../../lib/auth";
+import { pageUser } from "../../lib/auth";
 import { query } from "../../lib/db";
 
 export default async function UsagePage() {
-  const user = await currentUser();
+  const user = await pageUser();
   if (!user) redirect("/login");
   const filter = user.role === "admin" ? "" : "WHERE user_id = $1";
   const values = user.role === "admin" ? [] : [user.id];

@@ -1,19 +1,25 @@
 import { NextResponse } from "next/server";
-import { createSession } from "../../../../lib/auth/session";
-import { sessionCookie, sessionRepository } from "../../../../lib/auth";
-import { query } from "../../../../lib/db";
+import { randomBytes } from "node:crypto";
+import { hashOpaqueToken, sessionCookie } from "../../../../lib/auth";
+import { withTransaction } from "../../../../lib/db";
 import { verifyPassword } from "../../../../lib/auth/password";
 import { credentialsSchema } from "../../../../lib/validation";
 
 export async function POST(request: Request) {
   const body = credentialsSchema.safeParse(await request.json().catch(() => null));
   if (!body.success) return NextResponse.json({ error: "invalid credentials" }, { status: 400 });
-  const result = await query<{ id: string; email: string; name: string; role: "admin" | "member"; password_hash: string; disabled_at: Date | null }>("SELECT id, email, name, role, password_hash, disabled_at FROM users WHERE email = $1", [body.data.email]);
-  const user = result.rows[0];
-  if (!user || !(await verifyPassword(user.password_hash, body.data.password))) return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
-  if (user.disabled_at) return NextResponse.json({ error: "account disabled" }, { status: 403 });
-  const token = await createSession(sessionRepository, user.id);
-  const response = NextResponse.json({ id: user.id, email: user.email, name: user.name, role: user.role });
-  response.cookies.set(sessionCookie(token, new Date(Date.now() + 1000 * 60 * 60 * 24 * 7)));
+  const token = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7);
+  const user = await withTransaction(async (client) => {
+    // Serialize login with password changes so old credentials cannot create a surviving session.
+    const result = await client.query("SELECT id, email, name, role, password_hash, disabled_at, must_change_password FROM users WHERE email = $1 FOR UPDATE", [body.data.email]);
+    const row = result.rows[0];
+    if (!row || !(await verifyPassword(row.password_hash, body.data.password)) || row.disabled_at) return null;
+    await client.query("INSERT INTO sessions(user_id, token_hash, expires_at) VALUES ($1, $2, $3)", [row.id, hashOpaqueToken(token), expiresAt]);
+    return { id: row.id, email: row.email, name: row.name, role: row.role, mustChangePassword: row.must_change_password };
+  });
+  if (!user) return NextResponse.json({ error: "invalid credentials" }, { status: 401 });
+  const response = NextResponse.json(user);
+  response.cookies.set(sessionCookie(token, expiresAt));
   return response;
 }

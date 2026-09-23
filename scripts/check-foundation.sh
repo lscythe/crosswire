@@ -23,19 +23,24 @@ curl -fsS -c "$cookie_file" -X POST "$web_url/api/auth/login" \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" >/dev/null
 
-invite=$(curl -fsS -b "$cookie_file" -X POST "$web_url/api/invitations" \
+created=$(curl -fsS -b "$cookie_file" -X POST "$web_url/api/users" \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg email "$member_email" '{email:$email,role:"member"}')")
-invite_token=$(jq -r .token <<<"$invite")
-curl -fsS -X POST "$web_url/api/invitations/accept" \
+temporary_password=$(jq -r .temporaryPassword <<<"$created")
+curl -fsS -c "$cookie_file" -X POST "$web_url/api/auth/login" \
   -H 'Content-Type: application/json' \
-  -d "$(jq -n --arg token "$invite_token" --arg email "$member_email" --arg password "$member_password" '{token:$token,email:$email,password:$password}')" >/dev/null
+  -d "$(jq -n --arg email "$member_email" --arg password "$temporary_password" '{email:$email,password:$password}')" | jq -e '.mustChangePassword == true' >/dev/null
+restricted=$(curl -sS -o /dev/null -w '%{http_code}' -b "$cookie_file" "$web_url/api/keys")
+test "$restricted" = 401
+curl -fsS -b "$cookie_file" -X POST "$web_url/api/auth/change-password" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -n --arg password "$member_password" '{password:$password,confirmPassword:$password}')" >/dev/null
 
 curl -fsS -c "$cookie_file" -X POST "$web_url/api/auth/login" \
   -H 'Content-Type: application/json' \
   -d "$(jq -n --arg email "$member_email" --arg password "$member_password" '{email:$email,password:$password}')" >/dev/null
 curl -fsS -b "$cookie_file" "$web_url/api/auth/me" | jq -e --arg email "$member_email" '.email == $email and .role == "member"' >/dev/null
-forbidden=$(curl -sS -o /dev/null -w '%{http_code}' -b "$cookie_file" -X POST "$web_url/api/invitations" \
+forbidden=$(curl -sS -o /dev/null -w '%{http_code}' -b "$cookie_file" -X POST "$web_url/api/users" \
   -H 'Content-Type: application/json' -d '{"email":"blocked@example.com"}')
 test "$forbidden" = 403
 key_result=$(curl -fsS -b "$cookie_file" -X POST "$web_url/api/keys" \

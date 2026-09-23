@@ -36,7 +36,7 @@ func Middleware(conn *sql.DB, _ *redis.Client, next http.Handler) http.Handler {
 		key := strings.TrimPrefix(value, "Bearer ")
 		hash := sha256.Sum256([]byte(key))
 		var id string
-		err := conn.QueryRowContext(r.Context(), `SELECT k.user_id FROM api_keys k JOIN users u ON u.id = k.user_id WHERE k.key_hash = $1 AND k.revoked_at IS NULL AND u.disabled_at IS NULL`, hash[:]).Scan(&id)
+		err := conn.QueryRowContext(r.Context(), `SELECT k.user_id FROM api_keys k JOIN users u ON u.id = k.user_id WHERE k.key_hash = $1 AND k.revoked_at IS NULL AND u.disabled_at IS NULL AND NOT u.must_change_password`, hash[:]).Scan(&id)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return

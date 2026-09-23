@@ -5,7 +5,7 @@ export const credentialsSchema = z.object({
   password: z.string().min(12),
 });
 
-export const invitationSchema = z.object({
+export const createUserSchema = z.object({
   email: z.string().email().transform((value) => value.toLowerCase()),
   role: z.enum(["admin", "member"]).default("member"),
 });

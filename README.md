@@ -1,6 +1,6 @@
 # Crosswire
 
-Self-hosted team AI gateway. The foundation currently provides login, invitations, personal API keys, and a protected `/v1/models` endpoint. Provider connections and routing are next.
+Self-hosted team AI gateway. The foundation currently provides login, admin-created users with mandatory first-login password changes, personal API keys, and a protected `/v1/models` endpoint. Provider connections and routing are next.
 
 ## Local run
 

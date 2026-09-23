@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { currentUser } from "../../lib/auth";
+import { pageUser } from "../../lib/auth";
 import { query } from "../../lib/db";
 import { ConnectionForm } from "../../components/connection-form";
 
 export default async function ConnectionsPage() {
-  const user = await currentUser();
+  const user = await pageUser();
   if (!user) redirect("/login");
   const result = user.role === "admin"
     ? await query("SELECT id, name, base_url, visibility, enabled, last_test_status FROM connections ORDER BY created_at DESC")
