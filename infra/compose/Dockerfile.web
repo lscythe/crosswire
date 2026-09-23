@@ -15,7 +15,7 @@ ENV NODE_ENV=production
 RUN corepack enable
 COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=build /app/apps/web/package.json apps/web/package.json
-COPY --from=build /app/apps/web/.next apps/web/.next
 RUN pnpm install --prod --frozen-lockfile
+COPY --from=build /app/apps/web/.next apps/web/.next
 EXPOSE 3000
 CMD ["pnpm", "--filter", "@crosswire/web", "start"]
