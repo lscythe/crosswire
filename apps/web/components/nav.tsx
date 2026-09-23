@@ -6,6 +6,7 @@ export function Nav({ role }: { role: "admin" | "member" }) {
     <Link href="/connections">Connections</Link>
     <Link href="/probes">Probes</Link>
     <Link href="/usage">Usage</Link>
+    <Link href="/routing">Routing</Link>
     {role === "admin" && <Link href="/team">Team</Link>}
   </nav>;
 }
