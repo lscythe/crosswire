@@ -90,3 +90,32 @@ type Attempt struct {
 	Status         int    `json:"status"`
 	Reason         string `json:"reason"`
 }
+
+// LoadModels uses the same ownership and visibility rules as LoadRoutes.
+func LoadModels(ctx context.Context, db *sql.DB, userID string) ([]Model, error) {
+	rows, err := db.QueryContext(ctx, `SELECT DISTINCT r.model_alias
+ FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id
+ JOIN connections c ON c.id = r.connection_id
+ WHERE cfg.owner_user_id = $1 AND cfg.is_default AND c.enabled
+ AND (c.owner_user_id = $1 OR c.visibility = 'public') ORDER BY r.model_alias`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	models := []Model{}
+	for rows.Next() {
+		model := Model{Object: "model", OwnedBy: "crosswire"}
+		if err := rows.Scan(&model.ID); err != nil {
+			return nil, err
+		}
+		models = append(models, model)
+	}
+	return models, rows.Err()
+}
+
+type Model struct {
+	ID      string `json:"id"`
+	Object  string `json:"object"`
+	Created int64  `json:"created"`
+	OwnedBy string `json:"owned_by"`
+}

@@ -26,9 +26,18 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 		}
 		health(w, req)
 	})
-	r.Handle("GET /v1/models", auth.Middleware(conn, cache, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	r.Handle("GET /v1/models", auth.Middleware(conn, cache, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		models, err := provider.LoadModels(req.Context(), conn, auth.UserID(req.Context()))
+		if err != nil {
+			http.Error(w, "model discovery unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"object":"list","data":[]}`))
+		_ = json.NewEncoder(w).Encode(struct {
+			Object string           `json:"object"`
+			Data   []provider.Model `json:"data"`
+		}{"list", models})
 	})))
 	chat := auth.Middleware(conn, cache, http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		started := time.Now()
