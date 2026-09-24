@@ -25,7 +25,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (body.baseUrl && !isSafeProviderUrl(body.baseUrl))
     return NextResponse.json({ error: "provider URL is not allowed" }, { status: 400 });
   await query(
-    "UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), visibility = COALESCE($3, visibility), enabled = COALESCE($4, enabled), requests_per_minute = COALESCE($5, requests_per_minute), requests_per_day = COALESCE($6, requests_per_day), updated_at = now() WHERE id = $8 AND $7 IS NULL",
+    "UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), visibility = COALESCE($3, visibility), enabled = COALESCE($4, enabled), requests_per_minute = COALESCE($5, requests_per_minute), requests_per_day = COALESCE($6, requests_per_day), updated_at = now() WHERE id = $7",
     [
       body.name ?? null,
       body.baseUrl ?? null,
@@ -33,7 +33,6 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
       body.enabled ?? null,
       body.requestsPerMinute ?? null,
       body.requestsPerDay ?? null,
-      null,
       id,
     ],
   );
@@ -70,11 +69,12 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
       [id],
     );
     return NextResponse.json({ ok: true, status: 200, models: models.map((model) => model.id) });
-  } catch {
+  } catch (error) {
     await query(
       "UPDATE connections SET last_tested_at = now(), last_test_status = 'failed' WHERE id = $1",
       [id],
     );
-    return NextResponse.json({ ok: false, status: 0 }, { status: 502 });
+    const status = Number(String(error).match(/HTTP (\d{3})/)?.[1] ?? 0);
+    return NextResponse.json({ ok: false, status });
   }
 }

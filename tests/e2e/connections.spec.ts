@@ -42,11 +42,11 @@ test("connection management preserves secrets and enforces ownership", async ({
     await page.getByText("Add provider", { exact: true }).first().click();
     const createForm = page
       .locator("form")
-      .filter({ has: page.getByRole("button", { name: "Add provider", exact: true }) });
+      .filter({ has: page.getByRole("button", { name: "Test and add provider", exact: true }) });
     await createForm.getByLabel("Name", { exact: true }).fill(name);
     await createForm.getByLabel("Base URL", { exact: true }).fill(process.env.TEST_PROVIDER_URL!);
     await createForm.getByLabel("API key", { exact: true }).fill("connection-test-secret");
-    await page.getByRole("button", { name: "Add provider", exact: true }).click();
+    await page.getByRole("button", { name: "Test and add provider", exact: true }).click();
     const card = page
       .getByRole("article")
       .filter({ has: page.getByRole("heading", { name, exact: true }) });

@@ -34,7 +34,7 @@ test("admin can sign in and out", async ({ page }) => {
   await expect(page.locator("html")).toHaveClass(/light/);
   for (const name of [
     "API access",
-    "Connections",
+    "Providers",
     "Routing",
     "Usage",
     "Probes",

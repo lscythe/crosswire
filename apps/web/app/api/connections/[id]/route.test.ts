@@ -138,7 +138,7 @@ test("unrelated connection edits preserve saved quota limits", async () => {
     new Request("http://localhost", { method: "PATCH", body: '{"enabled":false}' }),
     context,
   );
-  expect(vi.mocked(query).mock.calls[1][1]?.slice(5, 7)).toEqual([null, null]);
+  expect(vi.mocked(query).mock.calls[1][1]?.slice(4, 6)).toEqual([null, null]);
 });
 test("limited probes return retry information without contacting the provider", async () => {
   vi.mocked(query)
