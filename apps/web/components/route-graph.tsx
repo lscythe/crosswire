@@ -25,6 +25,7 @@ export function RouteGraph({ mode }: { mode: "preview" | "full" }) {
   const [scope, setScope] = useState<"default" | "all">("default");
   const [snapshot, setSnapshot] = useState<GraphSnapshot | null>(null);
   const [stale, setStale] = useState(false);
+  const [activeProviders, setActiveProviders] = useState<Set<string>>(new Set());
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
@@ -44,8 +45,25 @@ export function RouteGraph({ mode }: { mode: "preview" | "full" }) {
 
   useEffect(() => {
     const events = new EventSource("/api/route-graph/events");
-    events.onmessage = () => {
+    events.onmessage = (event) => {
       setStale(false);
+      try {
+        const providerId = (JSON.parse(event.data) as { providerId?: string }).providerId;
+        if (providerId) {
+          setActiveProviders((current) => new Set(current).add(providerId));
+          window.setTimeout(
+            () =>
+              setActiveProviders((current) => {
+                const next = new Set(current);
+                next.delete(providerId);
+                return next;
+              }),
+            1800,
+          );
+        }
+      } catch {
+        // Ignore malformed event payloads; polling still refreshes the snapshot.
+      }
       load().catch(() => setStale(true));
     };
     events.addEventListener("stale", () => setStale(true));
@@ -169,7 +187,7 @@ export function RouteGraph({ mode }: { mode: "preview" | "full" }) {
             {providerPoints.map(({ provider, x, y }) => (
               <path
                 key={provider.id}
-                className={`route-edge route-edge--${provider.status}`}
+                className={`route-edge route-edge--${provider.status}${activeProviders.has(provider.id) ? " route-edge--active" : ""}`}
                 d={`M 610 205 C 680 205, 650 ${y + 30}, ${x} ${y + 30}`}
               />
             ))}
@@ -186,6 +204,7 @@ export function RouteGraph({ mode }: { mode: "preview" | "full" }) {
               <ProviderNode
                 key={provider.id}
                 provider={provider}
+                active={activeProviders.has(provider.id)}
                 style={{ left: x - 20, top: y }}
               />
             ))}
@@ -199,14 +218,16 @@ export function RouteGraph({ mode }: { mode: "preview" | "full" }) {
 
 function ProviderNode({
   provider,
+  active,
   style,
 }: {
   provider: GraphProvider;
+  active: boolean;
   style: { left: number; top: number };
 }) {
   return (
     <div
-      className={`route-provider-node route-provider-node--${provider.status}`}
+      className={`route-provider-node route-provider-node--${provider.status}${active ? " route-provider-node--active" : ""}`}
       style={style}
       role="img"
       aria-label={`${provider.name}: ${statusLabel[provider.status]}`}

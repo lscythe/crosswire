@@ -1047,6 +1047,11 @@ details[open] > :not(summary) {
   stroke: #56606d;
   opacity: 0.25;
 }
+.route-edge--active {
+  stroke-width: 3;
+  stroke: #f4f7fb;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.65));
+}
 .route-graph-node {
   position: absolute;
   z-index: 2;
@@ -1133,6 +1138,10 @@ details[open] > :not(summary) {
 .route-provider-node--disabled {
   opacity: 0.45;
   filter: grayscale(1);
+}
+.route-provider-node--active {
+  border-color: #f4f7fb;
+  box-shadow: 0 0 22px rgba(255, 255, 255, 0.2);
 }
 .route-provider-logo {
   grid-row: 1 / span 2;
