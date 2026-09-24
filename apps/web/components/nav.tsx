@@ -8,6 +8,7 @@ import {
   IconDashboard,
   IconKey,
   IconPlugConnected,
+  IconTopologyBus,
   IconUsers,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -19,6 +20,7 @@ const links = [
   { href: "/api-access", label: "API access", icon: IconKey },
   { href: "/providers", label: "Providers", icon: IconPlugConnected },
   { href: "/routing", label: "Routing", icon: IconArrowsSplit },
+  { href: "/topology", label: "Topology", icon: IconTopologyBus },
   { href: "/usage", label: "Usage", icon: IconChartBar },
   { href: "/probes", label: "Probes", icon: IconActivity },
 ];

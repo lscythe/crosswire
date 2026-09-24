@@ -13,6 +13,7 @@ import {
   IconShieldCheck,
 } from "@tabler/icons-react";
 import Link from "next/link";
+import { RouteGraph } from "../../components/route-graph";
 import { pageUser } from "../../lib/auth";
 import { query } from "../../lib/db";
 
@@ -143,6 +144,7 @@ export default async function DashboardPage({
           <span className="metric-caption">Across recorded requests</span>
         </Card>
       </div>
+      <RouteGraph mode="preview" />
       <Card className="activity-card">
         <div className="panel-heading">
           <div>
