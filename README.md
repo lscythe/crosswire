@@ -1,6 +1,6 @@
 # Crosswire
 
-Self-hosted team AI gateway. Includes username/password login, admin-created users, mandatory first-login password changes, private/shared providers, provider API-key rotation, imported model catalogs, routing, model probes, usage, and personal API keys.
+Self-hosted team AI gateway. Includes username/password login, admin-created users, mandatory first-login password changes, private/shared providers, provider API-key rotation, imported model catalogs, routing, live topology, model probes, usage, and personal API keys.
 
 ## Local run
 
@@ -19,6 +19,8 @@ curl -X POST http://localhost:3000/api/auth/bootstrap \
 ```
 
 Open `http://localhost:3000/login`. Sign in with your username (default bootstrap username: `admin`). `BOOTSTRAP_ADMIN_EMAIL` remains the admin contact email. Existing accounts receive a username derived from the email local part; collisions receive a numeric suffix. Find assigned usernames on the Team page. Run `./scripts/check-foundation.sh` with `BOOTSTRAP_ADMIN_USERNAME` and `BOOTSTRAP_ADMIN_PASSWORD` set to verify the API flow.
+
+The dashboard includes a compact live route graph. Open `/topology` for the full `Request -> Crosswire -> Providers` canvas. It supports pan, zoom, fit-to-view, default/all provider scope, provider health animation, and a server-sent request activity stream with polling fallback.
 
 ## Browser checks
 

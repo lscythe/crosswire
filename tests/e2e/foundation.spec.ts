@@ -35,6 +35,7 @@ test("admin can sign in and out", async ({ page }) => {
   for (const name of [
     "API access",
     "Providers",
+    "Topology",
     "Routing",
     "Usage",
     "Probes",
