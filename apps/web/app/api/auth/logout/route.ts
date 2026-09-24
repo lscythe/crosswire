@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { revokeSession } from "../../../../lib/auth/session";
+import { NextResponse } from "next/server";
 import { SESSION_COOKIE, sessionRepository } from "../../../../lib/auth";
+import { revokeSession } from "../../../../lib/auth/session";
 
 export async function POST() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;

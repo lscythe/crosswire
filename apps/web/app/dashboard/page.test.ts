@@ -1,20 +1,39 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, expect, it, vi } from "vitest";
+
 vi.mock("../../lib/auth", () => ({ pageUser: vi.fn() }));
 vi.mock("../../lib/db", () => ({ query: vi.fn() }));
+
 import { pageUser } from "../../lib/auth";
 import { query } from "../../lib/db";
 import DashboardPage from "./page";
+
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubGlobal("React", React);
   vi.mocked(pageUser).mockResolvedValue({ id: "member", role: "member" } as never);
 });
 function results(requests = 0) {
-  vi.mocked(query).mockResolvedValueOnce({ rows: [{ requests, succeeded: requests / 2, average_latency_ms: requests ? 150 : null }] } as never)
-    .mockResolvedValueOnce({ rows: requests ? [{ id: "request", model: "team-model", status: 503, latency_ms: 150, error_reason: "upstream failed" }] : [] } as never)
-    .mockResolvedValueOnce({ rows: [] } as never).mockResolvedValueOnce({ rows: [] } as never);
+  vi.mocked(query)
+    .mockResolvedValueOnce({
+      rows: [{ requests, succeeded: requests / 2, average_latency_ms: requests ? 150 : null }],
+    } as never)
+    .mockResolvedValueOnce({
+      rows: requests
+        ? [
+            {
+              id: "request",
+              model: "team-model",
+              status: 503,
+              latency_ms: 150,
+              error_reason: "upstream failed",
+            },
+          ]
+        : [],
+    } as never)
+    .mockResolvedValueOnce({ rows: [] } as never)
+    .mockResolvedValueOnce({ rows: [] } as never);
 }
 it("renders empty states without invented success or latency", async () => {
   results();
@@ -49,6 +68,8 @@ it("filters personal request totals and recent requests by the signed-in user", 
 });
 it("requires authentication before querying dashboard data", async () => {
   vi.mocked(pageUser).mockRejectedValue(new Error("redirect to login"));
-  await expect(DashboardPage({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect to login");
+  await expect(DashboardPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+    "redirect to login",
+  );
   expect(query).not.toHaveBeenCalled();
 });

@@ -41,3 +41,18 @@ This checks connection editing, secret preservation, sharing, permission enforce
 Route `/v1/*` and `/health` to `gateway:8080`; route all other paths to `web:3000` on one domain. Set `PUBLIC_BASE_URL` to that HTTPS domain. Set `DATABASE_URL` to a managed PostgreSQL URL when using an external database. The default Compose file still starts its local PostgreSQL container; remove that service and the PostgreSQL `depends_on` entries in Dokploy when using a managed database.
 
 Set unique production secrets through Dokploy environment variables. Do not deploy `.env.example` values.
+
+## Quality gates
+
+Use Node.js 22.22.1+ and Go 1.24+. `pnpm install` installs Git hooks in developer checkouts; CI and production installs skip hooks.
+
+- `pnpm lint`: Biome formatting, imports, lint; Go formatting and `go vet`.
+- `pnpm format`: apply Biome formatting and safe fixes. Use `gofmt -w services` for Go.
+- `pnpm typecheck`: web TypeScript checks.
+- `pnpm test`: web and Go unit tests.
+- `pnpm check`: all checks above, without changing files.
+- `bash scripts/check-quality-gates.sh`: verify valid input passes and invalid commits/code fail.
+
+Pre-commit runs Biome and `gofmt` on staged files. Commit-msg requires Conventional Commits, e.g. `feat: add model discovery`. Pre-push runs `pnpm check`.
+
+GitHub Actions repeats the checks, validates commit messages, builds the Docker stack, and runs browser tests against a deterministic local provider. No live provider credentials are required. To enforce CI on merges, configure branch protection for **Lint, types, tests, commits** and **Build and browser tests**. Local hooks alone can be bypassed.

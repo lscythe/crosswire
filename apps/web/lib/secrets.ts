@@ -19,5 +19,8 @@ export function decryptSecret(value: string) {
   if (!ivText || !tagText || !ciphertextText) throw new Error("invalid encrypted secret");
   const decipher = createDecipheriv("aes-256-gcm", key(), Buffer.from(ivText, "base64url"));
   decipher.setAuthTag(Buffer.from(tagText, "base64url"));
-  return Buffer.concat([decipher.update(Buffer.from(ciphertextText, "base64url")), decipher.final()]).toString("utf8");
+  return Buffer.concat([
+    decipher.update(Buffer.from(ciphertextText, "base64url")),
+    decipher.final(),
+  ]).toString("utf8");
 }

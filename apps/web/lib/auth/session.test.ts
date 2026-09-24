@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createSession, lookupSession, revokeSession } from "./session";
+import { createSession, lookupSession, revokeSession, type SessionRecord } from "./session";
 
 function repository() {
-  const records = new Map<string, any>();
+  const records = new Map<string, SessionRecord>();
   return {
     records,
-    insert: async (record: any) => records.set(record.tokenHash.toString("hex"), record),
+    insert: async (record: SessionRecord) => {
+      records.set(record.tokenHash.toString("hex"), record);
+    },
     findByHash: async (hash: Buffer) => records.get(hash.toString("hex")) ?? null,
     deleteById: async (id: string) => {
       for (const [key, record] of records) if (record.id === id) records.delete(key);

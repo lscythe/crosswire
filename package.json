@@ -7,11 +7,29 @@
     "test:web": "pnpm --filter @crosswire/web test",
     "dev:gateway": "cd services/gateway && go run ./cmd/gateway",
     "test:gateway": "cd services/gateway && go test ./...",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "prepare": "node -e \"if (!process.env.CI && process.env.NODE_ENV !== 'production' && require('node:fs').existsSync('.git')) import('husky').then(m => m.default())\"",
+    "lint": "biome check --error-on-warnings . && bash scripts/check-go.sh lint",
+    "format": "biome check --write .",
+    "typecheck": "pnpm --filter @crosswire/web exec tsc --noEmit --incremental false",
+    "test": "vitest run apps/web --pool=threads --maxWorkers=1 --minWorkers=1 && bash scripts/check-go.sh test",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
     "@playwright/test": "^1.52.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=22.22.1"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,cjs,mjs,json,jsonc,css}": "biome check --write --error-on-warnings --no-errors-on-unmatched",
+    "*.go": "gofmt -w"
   }
 }

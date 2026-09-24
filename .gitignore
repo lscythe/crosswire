@@ -6,3 +6,5 @@ dist/
 docs/superpowers/
 coverage/
 test-results/
+*.tsbuildinfo
+playwright-report/

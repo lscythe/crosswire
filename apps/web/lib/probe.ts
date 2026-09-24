@@ -1,6 +1,10 @@
 export type ProbeCheck = { capability: string; passed: boolean; evidence: Record<string, unknown> };
 
-export function identityConfidence(requested: string, returned: string | null, metadata: Record<string, unknown>) {
+export function identityConfidence(
+  requested: string,
+  returned: string | null,
+  metadata: Record<string, unknown>,
+) {
   if (returned === requested && metadata.model === requested) return "high" as const;
   if (returned === requested || metadata.model === requested) return "medium" as const;
   if (returned) return "low" as const;

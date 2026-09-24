@@ -7,7 +7,7 @@ describe("passwords", () => {
     const encoded = await hashPassword(password);
     expect(encoded).toContain("argon2id");
     await expect(verifyPassword(encoded, password)).resolves.toBe(true);
-    await expect(verifyPassword(encoded, "wrong password" )).resolves.toBe(false);
+    await expect(verifyPassword(encoded, "wrong password")).resolves.toBe(false);
   });
 
   it("rejects short passwords", () => {

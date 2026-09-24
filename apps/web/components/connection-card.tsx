@@ -1,13 +1,30 @@
 "use client";
-import { Button, Input, Card, Chip } from "@heroui/react";
-
-import { useState, type FormEvent } from "react";
+import { Button, Card, Chip, Input } from "@heroui/react";
 import { useRouter } from "next/navigation";
-import { ConnectionForm } from "./connection-form";
+import { type FormEvent, useState } from "react";
 import type { ProbeCheck } from "../lib/probe";
+import { ConnectionForm } from "./connection-form";
 
-type ProbeResult = { requestedModel: string; returnedModel: string | null; identityConfidence: string; status: string; checks: ProbeCheck[] };
-export type ConnectionView = { id: string; name: string; base_url: string; visibility: "private" | "public"; enabled: boolean; requests_per_minute: number; requests_per_day: number; quotaUsage: Array<{ user: string; used: number }>; last_test_status: string | null; canManage: boolean; latestProbe: ProbeResult | null };
+type ProbeResult = {
+  requestedModel: string;
+  returnedModel: string | null;
+  identityConfidence: string;
+  status: string;
+  checks: ProbeCheck[];
+};
+export type ConnectionView = {
+  id: string;
+  name: string;
+  base_url: string;
+  visibility: "private" | "public";
+  enabled: boolean;
+  requests_per_minute: number;
+  requests_per_day: number;
+  quotaUsage: Array<{ user: string; used: number }>;
+  last_test_status: string | null;
+  canManage: boolean;
+  latestProbe: ProbeResult | null;
+};
 
 export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   const router = useRouter();
@@ -22,19 +39,38 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
     setError("");
     setMessage("");
     try {
-      const response = await fetch(`/api/connections/${connection.id}${action === "probe" ? "/probe" : ""}`, {
-        method: action === "toggle" ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: action === "toggle" ? JSON.stringify({ enabled: !connection.enabled }) : action === "probe" ? JSON.stringify({ model }) : undefined,
-      });
+      const response = await fetch(
+        `/api/connections/${connection.id}${action === "probe" ? "/probe" : ""}`,
+        {
+          method: action === "toggle" ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body:
+            action === "toggle"
+              ? JSON.stringify({ enabled: !connection.enabled })
+              : action === "probe"
+                ? JSON.stringify({ model })
+                : undefined,
+        },
+      );
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? (action === "test" ? "Connection test failed. Check the URL and credentials." : "Request failed. Try again."));
+      if (!response.ok)
+        throw new Error(
+          body.error ??
+            (action === "test"
+              ? "Connection test failed. Check the URL and credentials."
+              : "Request failed. Try again."),
+        );
       if (action === "test") {
         setModels(body.models ?? []);
-        setMessage(body.ok ? `Connection test passed. ${body.models.length} models returned.` : `Connection test failed (HTTP ${body.status}). Check the URL and credentials.`);
+        setMessage(
+          body.ok
+            ? `Connection test passed. ${body.models.length} models returned.`
+            : `Connection test failed (HTTP ${body.status}). Check the URL and credentials.`,
+        );
       }
       if (action === "probe") setProbe(body);
-      if (action === "toggle") setMessage(connection.enabled ? "Connection disabled" : "Connection enabled");
+      if (action === "toggle")
+        setMessage(connection.enabled ? "Connection disabled" : "Connection enabled");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed. Try again.");
@@ -47,35 +83,146 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
     event.preventDefault();
     void act("probe", String(new FormData(event.currentTarget).get("model")));
   }
-  return <Card role="article" className="connection-card" aria-labelledby={`connection-${connection.id}`}>
-    <h3 id={`connection-${connection.id}`}>{connection.name}</h3>
-    <p className="connection-url">{connection.base_url}</p>
-    <div className="connection-actions status-chips"><Chip size="sm" variant="soft" color="accent">{connection.visibility === "public" ? "Public" : "Private"}</Chip><Chip size="sm" variant="soft" color={connection.enabled ? "success" : "default"}>{connection.enabled ? "Enabled" : "Disabled"}</Chip><Chip size="sm" variant="soft" color={connection.last_test_status === "failed" ? "danger" : "default"}>Last test: {connection.last_test_status ?? "untested"}</Chip></div>
-    {connection.visibility === "public" && <section aria-label="Public connection limits"><p>Per user: {connection.requests_per_minute} requests/minute · {connection.requests_per_day} requests/day (UTC).</p><p>Upstream attempts count even if they fail. Probes reserve two requests. Discovery and health checks do not count.</p>
-      <details><summary>Daily quota usage</summary>{connection.quotaUsage.length ? <ul>{connection.quotaUsage.map(item => <li key={item.user}>{item.user}: {item.used} / {connection.requests_per_day}</li>)}</ul> : <p>No quota used today.</p>}</details>
-    </section>}
-    {connection.canManage ? <>
-      <div className="connection-actions">
-        <Button variant="secondary" type="button" isDisabled={!!pending} onPress={() => act("toggle")}>{pending === "toggle" ? "Saving..." : connection.enabled ? "Disable" : "Enable"}</Button>
-        <Button variant="secondary" type="button" isDisabled={!!pending} onPress={() => act("test")}>{pending === "test" ? "Testing..." : "Test connection"}</Button>
+  return (
+    <Card
+      role="article"
+      className="connection-card"
+      aria-labelledby={`connection-${connection.id}`}
+    >
+      <h3 id={`connection-${connection.id}`}>{connection.name}</h3>
+      <p className="connection-url">{connection.base_url}</p>
+      <div className="connection-actions status-chips">
+        <Chip size="sm" variant="soft" color="accent">
+          {connection.visibility === "public" ? "Public" : "Private"}
+        </Chip>
+        <Chip size="sm" variant="soft" color={connection.enabled ? "success" : "default"}>
+          {connection.enabled ? "Enabled" : "Disabled"}
+        </Chip>
+        <Chip
+          size="sm"
+          variant="soft"
+          color={connection.last_test_status === "failed" ? "danger" : "default"}
+        >
+          Last test: {connection.last_test_status ?? "untested"}
+        </Chip>
       </div>
-      <details><summary>Edit connection</summary><ConnectionForm connection={connection} onSaved={() => { setModels([]); setProbe(null); }} /></details>
-    </> : <p>Shared connection. Only its owner or an admin can edit or test it.</p>}
-    <form onSubmit={submitProbe}>
-      <label className="field">Model<Input name="model" list={`models-${connection.id}`} placeholder="Enter a model ID" required maxLength={200} disabled={!connection.enabled || !!pending} /></label>
-      <datalist id={`models-${connection.id}`}>{models.map((model) => <option key={model} value={model} />)}</datalist>
-      <p>Choose a suggested model after testing, or enter an ID. A probe sends two short requests to the provider.</p>
-      <Button variant="secondary" type="submit" isDisabled={!connection.enabled || !!pending}>{pending === "probe" ? "Probing..." : "Run probe"}</Button>
-      {!connection.enabled && <p>Enable this connection before probing.</p>}
-    </form>
-    {message && <p role="status">{message}</p>}
-    {error && <p className="error" role="alert">{error}</p>}
-    {result && <section aria-label="Latest probe" aria-live="polite">
-      <h4>Latest probe: {result.status}</h4>
-      <p>Requested: {result.requestedModel} · Returned: {result.returnedModel ?? "not reported"}</p>
-      <p>Identity confidence: {result.identityConfidence}</p>
-      <p>Provider-reported identity is evidence, not proof. This probe cannot cryptographically verify the model.</p>
-      <details><summary>Probe evidence</summary>{result.checks.map((check, index) => <div key={`${check.capability}-${index}`}><h5>{check.capability}: {check.passed ? "passed" : "failed"}</h5><pre>{JSON.stringify(check.evidence, null, 2)}</pre></div>)}</details>
-    </section>}
-  </Card>;
+      {connection.visibility === "public" && (
+        <section aria-label="Public connection limits">
+          <p>
+            Per user: {connection.requests_per_minute} requests/minute ·{" "}
+            {connection.requests_per_day} requests/day (UTC).
+          </p>
+          <p>
+            Upstream attempts count even if they fail. Probes reserve two requests. Discovery and
+            health checks do not count.
+          </p>
+          <details>
+            <summary>Daily quota usage</summary>
+            {connection.quotaUsage.length ? (
+              <ul>
+                {connection.quotaUsage.map((item) => (
+                  <li key={item.user}>
+                    {item.user}: {item.used} / {connection.requests_per_day}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No quota used today.</p>
+            )}
+          </details>
+        </section>
+      )}
+      {connection.canManage ? (
+        <>
+          <div className="connection-actions">
+            <Button
+              variant="secondary"
+              type="button"
+              isDisabled={!!pending}
+              onPress={() => act("toggle")}
+            >
+              {pending === "toggle" ? "Saving..." : connection.enabled ? "Disable" : "Enable"}
+            </Button>
+            <Button
+              variant="secondary"
+              type="button"
+              isDisabled={!!pending}
+              onPress={() => act("test")}
+            >
+              {pending === "test" ? "Testing..." : "Test connection"}
+            </Button>
+          </div>
+          <details>
+            <summary>Edit connection</summary>
+            <ConnectionForm
+              connection={connection}
+              onSaved={() => {
+                setModels([]);
+                setProbe(null);
+              }}
+            />
+          </details>
+        </>
+      ) : (
+        <p>Shared connection. Only its owner or an admin can edit or test it.</p>
+      )}
+      <form onSubmit={submitProbe}>
+        <label className="field">
+          Model
+          <Input
+            name="model"
+            list={`models-${connection.id}`}
+            placeholder="Enter a model ID"
+            required
+            maxLength={200}
+            disabled={!connection.enabled || !!pending}
+          />
+        </label>
+        <datalist id={`models-${connection.id}`}>
+          {models.map((model) => (
+            <option key={model} value={model} />
+          ))}
+        </datalist>
+        <p>
+          Choose a suggested model after testing, or enter an ID. A probe sends two short requests
+          to the provider.
+        </p>
+        <Button variant="secondary" type="submit" isDisabled={!connection.enabled || !!pending}>
+          {pending === "probe" ? "Probing..." : "Run probe"}
+        </Button>
+        {!connection.enabled && <p>Enable this connection before probing.</p>}
+      </form>
+      {message && <p role="status">{message}</p>}
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+      {result && (
+        <section aria-label="Latest probe" aria-live="polite">
+          <h4>Latest probe: {result.status}</h4>
+          <p>
+            Requested: {result.requestedModel} · Returned: {result.returnedModel ?? "not reported"}
+          </p>
+          <p>Identity confidence: {result.identityConfidence}</p>
+          <p>
+            Provider-reported identity is evidence, not proof. This probe cannot cryptographically
+            verify the model.
+          </p>
+          <details>
+            <summary>Probe evidence</summary>
+            {result.checks.map((check, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: Probe evidence is an immutable result snapshot.
+              <div key={`${check.capability}-${index}`}>
+                <h5>
+                  {check.capability}: {check.passed ? "passed" : "failed"}
+                </h5>
+                <pre>{JSON.stringify(check.evidence, null, 2)}</pre>
+              </div>
+            ))}
+          </details>
+        </section>
+      )}
+    </Card>
+  );
 }

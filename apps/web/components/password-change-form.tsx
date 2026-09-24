@@ -1,7 +1,7 @@
 "use client";
 import { Button, Input } from "@heroui/react";
-import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
 export function PasswordChangeForm() {
   const router = useRouter();
@@ -13,7 +13,14 @@ export function PasswordChangeForm() {
     setError("");
     setPending(true);
     try {
-      const response = await fetch("/api/auth/change-password", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: form.get("password"), confirmPassword: form.get("confirmPassword") }) });
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: form.get("password"),
+          confirmPassword: form.get("confirmPassword"),
+        }),
+      });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "Could not change password");
       router.replace("/login");
@@ -24,10 +31,34 @@ export function PasswordChangeForm() {
       setPending(false);
     }
   }
-  return <form onSubmit={submit}>
-    <label className="field">New password<Input name="password" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required /></label>
-    <label className="field">Confirm password<Input name="confirmPassword" type="password" autoComplete="new-password" minLength={12} maxLength={1024} required /></label>
-    {error && <p role="alert">{error}</p>}
-    <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Saving..." : "Change password"}</Button>
-  </form>;
+  return (
+    <form onSubmit={submit}>
+      <label className="field">
+        New password
+        <Input
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={12}
+          maxLength={1024}
+          required
+        />
+      </label>
+      <label className="field">
+        Confirm password
+        <Input
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          minLength={12}
+          maxLength={1024}
+          required
+        />
+      </label>
+      {error && <p role="alert">{error}</p>}
+      <Button variant="primary" type="submit" className="primary" isDisabled={pending}>
+        {pending ? "Saving..." : "Change password"}
+      </Button>
+    </form>
+  );
 }

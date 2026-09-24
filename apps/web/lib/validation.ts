@@ -1,6 +1,12 @@
 import { z } from "zod";
 
-export const usernameSchema = z.string().trim().toLowerCase().min(3).max(64).regex(/^[a-z0-9][a-z0-9._-]*$/);
+export const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(64)
+  .regex(/^[a-z0-9][a-z0-9._-]*$/);
 
 export const credentialsSchema = z.object({
   username: usernameSchema,
@@ -9,7 +15,10 @@ export const credentialsSchema = z.object({
 
 export const createUserSchema = z.object({
   username: usernameSchema,
-  email: z.string().email().transform((value) => value.toLowerCase()),
+  email: z
+    .string()
+    .email()
+    .transform((value) => value.toLowerCase()),
   role: z.enum(["admin", "member"]).default("member"),
 });
 

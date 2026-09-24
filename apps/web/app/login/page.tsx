@@ -1,8 +1,7 @@
 "use client";
 import { Button, Input } from "@heroui/react";
-
-import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { type FormEvent, useState } from "react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -31,13 +30,37 @@ export default function LoginPage() {
     }
   }
 
-  return <main className="auth">
-    <div className="auth-brand">Crosswire / Team gateway</div><h1>Welcome back</h1><p>Sign in to your workspace.</p>
-    <form onSubmit={submit}>
-      <label className="field">Username<Input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={64} required /></label>
-      <label className="field">Password<Input name="password" type="password" autoComplete="current-password" required /></label>
-      {error && <p className="error" role="alert">{error}</p>}
-      <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Signing in..." : "Sign in"}</Button>
-    </form>
-  </main>;
+  return (
+    <main className="auth">
+      <div className="auth-brand">Crosswire / Team gateway</div>
+      <h1>Welcome back</h1>
+      <p>Sign in to your workspace.</p>
+      <form onSubmit={submit}>
+        <label className="field">
+          Username
+          <Input
+            name="username"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            minLength={3}
+            maxLength={64}
+            required
+          />
+        </label>
+        <label className="field">
+          Password
+          <Input name="password" type="password" autoComplete="current-password" required />
+        </label>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        <Button variant="primary" type="submit" className="primary" isDisabled={pending}>
+          {pending ? "Signing in..." : "Sign in"}
+        </Button>
+      </form>
+    </main>
+  );
 }

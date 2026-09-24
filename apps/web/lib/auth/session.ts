@@ -17,7 +17,11 @@ export function hashOpaqueToken(token: string) {
   return createHash("sha256").update(token).digest();
 }
 
-export async function createSession(repository: SessionRepository, userId: string, ttlMs = 1000 * 60 * 60 * 24 * 7) {
+export async function createSession(
+  repository: SessionRepository,
+  userId: string,
+  ttlMs = 1000 * 60 * 60 * 24 * 7,
+) {
   const token = randomBytes(32).toString("base64url");
   await repository.insert({
     id: randomUUID(),

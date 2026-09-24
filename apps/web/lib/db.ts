@@ -2,7 +2,8 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 const globalForDb = globalThis as typeof globalThis & { crosswirePool?: Pool };
 
-export const pool = globalForDb.crosswirePool ?? new Pool({ connectionString: process.env.DATABASE_URL });
+export const pool =
+  globalForDb.crosswirePool ?? new Pool({ connectionString: process.env.DATABASE_URL });
 if (process.env.NODE_ENV !== "production") globalForDb.crosswirePool = pool;
 
 export async function withTransaction<T>(fn: (client: PoolClient) => Promise<T>) {

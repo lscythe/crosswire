@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { pageUser } from "../../lib/auth";
 import { AppShell } from "../../components/app-shell";
+import { pageUser } from "../../lib/auth";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await pageUser();
