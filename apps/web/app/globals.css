@@ -952,3 +952,259 @@ details[open] > :not(summary) {
   background: var(--surface-secondary);
   margin: 16px 0;
 }
+
+.route-graph {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.route-graph-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.route-graph-toolbar > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.route-graph-toolbar strong {
+  font-size: 13px;
+}
+.route-graph-stale {
+  color: var(--warning);
+  font-size: 11px;
+}
+.route-graph-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.route-graph-scope select {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-secondary);
+  color: var(--foreground);
+  font-size: 11px;
+}
+.route-graph-viewport {
+  overflow: hidden;
+  cursor: grab;
+  background-color: #121619;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.route-graph-viewport:active {
+  cursor: grabbing;
+}
+.route-graph-canvas {
+  position: relative;
+  width: 1100px;
+  min-width: 1100px;
+  transform-origin: 0 0;
+  transition: transform 160ms ease-out;
+}
+.route-graph-edges {
+  position: absolute;
+  inset: 0;
+  width: 1100px;
+  height: 100%;
+  overflow: visible;
+}
+.route-edge {
+  fill: none;
+  stroke: #637083;
+  stroke-width: 1.5;
+  opacity: 0.7;
+}
+.route-edge--request {
+  stroke: #8aa0b8;
+  stroke-width: 2;
+}
+.route-edge--healthy {
+  stroke: #55d6a0;
+  stroke-dasharray: 8 10;
+  animation: route-flow 1.8s linear infinite;
+}
+.route-edge--degraded {
+  stroke: #e7b86e;
+  stroke-dasharray: 3 10;
+  animation: route-flow 2.8s linear infinite;
+}
+.route-edge--unreachable {
+  stroke: #e47c7c;
+  opacity: 0.45;
+}
+.route-edge--disabled {
+  stroke: #56606d;
+  opacity: 0.25;
+}
+.route-graph-node {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px solid #475466;
+  background: #171d23;
+  color: #e7edf5;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+}
+.route-graph-node--request {
+  left: 55px;
+  top: 175px;
+  width: 125px;
+  height: 60px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.route-graph-node--gateway {
+  left: 370px;
+  top: 120px;
+  width: 240px;
+  height: 170px;
+  border-color: #6ee7b7;
+  border-radius: 24px;
+  font-size: 19px;
+}
+.route-graph-node--gateway small {
+  margin-top: -48px;
+  color: #91a0b3;
+  font-size: 11px;
+}
+.route-graph-node-mark {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  color: #6ee7b7;
+  font-size: 11px;
+  font-weight: 700;
+}
+.route-provider-group {
+  position: absolute;
+  left: 690px;
+  top: 15px;
+  width: 390px;
+  min-height: 330px;
+  border: 1px solid #56616e;
+  border-radius: 24px;
+  background: rgba(12, 16, 20, 0.72);
+}
+.route-provider-group-label {
+  padding: 14px 18px 4px;
+  color: #8e9bad;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.route-provider-node {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  grid-template-rows: 1fr 1fr;
+  align-items: center;
+  width: 165px;
+  height: 60px;
+  padding: 8px 10px;
+  border: 1px solid #3f4b58;
+  border-radius: 10px;
+  background: #171d23;
+  color: #eef3f8;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+.route-provider-node--healthy {
+  animation: provider-breathe 3.2s ease-in-out infinite;
+}
+.route-provider-node--degraded {
+  animation: provider-flicker 2.8s ease-in-out infinite;
+  border-color: #b98b4c;
+}
+.route-provider-node--unreachable {
+  border-color: #a95353;
+}
+.route-provider-node--disabled {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.route-provider-logo {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  background: #27313d;
+  color: #c9d5e4;
+  font-size: 9px;
+  font-weight: 700;
+}
+.route-provider-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.route-provider-status {
+  color: #91a0b3;
+  font-size: 9px;
+}
+.route-graph-empty {
+  padding: 70px 22px;
+  color: #91a0b3;
+  font-size: 12px;
+  text-align: center;
+}
+@keyframes route-flow {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+@keyframes provider-breathe {
+  0%,
+  100% {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(85, 214, 160, 0.18);
+  }
+}
+@keyframes provider-flicker {
+  0%,
+  88%,
+  100% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.45;
+  }
+  93% {
+    opacity: 0.9;
+  }
+}
+@media (max-width: 720px) {
+  .route-graph-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .route-graph-toolbar > div:first-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .route-graph-actions {
+    width: 100%;
+  }
+  .route-graph-scope {
+    flex: 1;
+  }
+  .route-graph-scope select {
+    width: 100%;
+  }
+}
