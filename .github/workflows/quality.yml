@@ -69,7 +69,7 @@ jobs:
         run: |
           docker compose --env-file .env.example -f infra/compose/docker-compose.yml cp tests/fixtures/provider.cjs web:/tmp/provider.cjs
           docker compose --env-file .env.example -f infra/compose/docker-compose.yml exec -d web node /tmp/provider.cjs
-          docker compose --env-file .env.example -f infra/compose/docker-compose.yml exec -T web node -e 'const wait = async () => { for (let i = 0; i < 30; i++) { try { if ((await fetch("http://localhost:4100/v1/models")).ok) return; } catch {} await new Promise(r => setTimeout(r, 1000)); } process.exit(1); }; wait();'
+          docker compose --env-file .env.example -f infra/compose/docker-compose.yml exec -T web node -e 'const wait = async () => { for (let i = 0; i < 30; i++) { try { if ((await fetch("http://127.0.0.1:4100/v1/models", { headers: { Authorization: "Bearer connection-test-secret" } })).ok) return; } catch {} await new Promise(r => setTimeout(r, 1000)); } process.exit(1); }; wait();'
       - name: Browser tests
         env:
           TEST_PROVIDER_URL: http://web:4100/v1
