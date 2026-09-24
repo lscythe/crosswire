@@ -6,7 +6,7 @@ DECLARE
   connection uuid := gen_random_uuid();
   retry integer;
 BEGIN
-  INSERT INTO users(id, email, password_hash, role) VALUES (caller, caller::text || '@quota.invalid', 'test-only', 'member');
+  INSERT INTO users(id, username, email, password_hash, role) VALUES (caller, caller::text, caller::text || '@quota.invalid', 'test-only', 'member');
   INSERT INTO connections(id, owner_user_id, name, base_url, api_key_ciphertext, visibility, requests_per_minute, requests_per_day)
     VALUES (connection, caller, 'quota self-check', 'https://invalid.example/v1', 'test-only', 'public', 2, 3);
   ASSERT reserve_connection_requests(connection, caller, 2) = 0, 'two-request probe reservation';

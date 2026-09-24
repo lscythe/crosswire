@@ -24,9 +24,9 @@ export async function currentUser(allowPasswordChange = false) {
   if (!token) return null;
   const session = await lookupSession(repository, token);
   if (!session) return null;
-  const result = await query<{ id: string; email: string; name: string; role: "admin" | "member"; disabled_at: Date | null; must_change_password: boolean }>("SELECT id, email, name, role, disabled_at, must_change_password FROM users WHERE id = $1", [session.userId]);
+  const result = await query<{ id: string; username: string; email: string; name: string; role: "admin" | "member"; disabled_at: Date | null; must_change_password: boolean }>("SELECT id, username, email, name, role, disabled_at, must_change_password FROM users WHERE id = $1", [session.userId]);
   const user = result.rows[0];
-  return user && !user.disabled_at && (allowPasswordChange || !user.must_change_password) ? { id: user.id, email: user.email, name: user.name, role: user.role, mustChangePassword: user.must_change_password } : null;
+  return user && !user.disabled_at && (allowPasswordChange || !user.must_change_password) ? { id: user.id, username: user.username, email: user.email, name: user.name, role: user.role, mustChangePassword: user.must_change_password } : null;
 }
 
 export function sessionCookie(token: string, expiresAt: Date) {

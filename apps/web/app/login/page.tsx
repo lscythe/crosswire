@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "@heroui/react";
+import { Button, Input } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -18,9 +18,9 @@ export default function LoginPage() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.get("email"), password: form.get("password") }),
+        body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
       });
-      if (!response.ok) throw new Error("Invalid email or password");
+      if (!response.ok) throw new Error("Invalid username or password");
       const user = await response.json();
       router.replace(user.mustChangePassword ? "/change-password" : "/dashboard");
       router.refresh();
@@ -34,8 +34,8 @@ export default function LoginPage() {
   return <main className="auth">
     <div className="auth-brand">Crosswire / Team gateway</div><h1>Welcome back</h1><p>Sign in to your workspace.</p>
     <form onSubmit={submit}>
-      <label className="field">Email<input name="email" type="email" autoComplete="username" required /></label>
-      <label className="field">Password<input name="password" type="password" autoComplete="current-password" required /></label>
+      <label className="field">Username<Input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={64} required /></label>
+      <label className="field">Password<Input name="password" type="password" autoComplete="current-password" required /></label>
       {error && <p className="error" role="alert">{error}</p>}
       <Button variant="primary" type="submit" className="primary" isDisabled={pending}>{pending ? "Signing in..." : "Sign in"}</Button>
     </form>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "@fontsource-variable/geist";
 import "./globals.css";
 
 export default function RootLayout({ children }: { children: ReactNode }) {

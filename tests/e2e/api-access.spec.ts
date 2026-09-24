@@ -3,17 +3,17 @@ import { randomUUID } from "node:crypto";
 
 test("personal keys and model discovery follow active routing permissions", async ({ page, browser }) => {
   await page.goto('/login');
-  await page.getByLabel('Email', { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@example.com');
+  await page.getByLabel('Username', { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_USERNAME ?? 'admin');
   await page.getByLabel('Password', { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? 'replace-with-a-long-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   const base = new URL(page.url()).origin;
   const context = await browser.newContext();
   const email = `keys-${randomUUID()}@example.com`;
-  const account = await (await page.request.post('/api/users', { data: { email } })).json();
-  await context.request.post(`${base}/api/auth/login`, { data: { email, password: account.temporaryPassword } });
+  const account = await (await page.request.post('/api/users', { data: { username: email.split("@")[0], email } })).json();
+  await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: account.temporaryPassword } });
   await context.request.post(`${base}/api/auth/change-password`, { data: { password: 'api-access-password', confirmPassword: 'api-access-password' } });
-  await context.request.post(`${base}/api/auth/login`, { data: { email, password: 'api-access-password' } });
+  await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: 'api-access-password' } });
   const member = await context.newPage();
   let connectionId: string | undefined;
   let configId: string | undefined;

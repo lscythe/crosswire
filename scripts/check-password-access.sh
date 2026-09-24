@@ -10,7 +10,7 @@ const { Pool } = require('pg');
   const id = randomUUID();
   const key = `cw_live_${randomBytes(32).toString('hex')}`;
   try {
-    await pool.query("INSERT INTO users(id,email,password_hash,role,must_change_password) VALUES ($1,$2,'unusable','member',true)", [id, `gateway-check-${id}@example.com`]);
+    await pool.query("INSERT INTO users(id,username,email,password_hash,role,must_change_password) VALUES ($1::uuid,$1::text,$2,'unusable','member',true)", [id, `gateway-check-${id}@example.com`]);
     await pool.query("INSERT INTO api_keys(user_id,name,key_hash,key_prefix) VALUES ($1,'access check',$2,$3)", [id, createHash('sha256').update(key).digest(), key.slice(0, 16)]);
     const request = () => fetch('http://gateway:8080/v1/models', { headers: { Authorization: `Bearer ${key}` } });
     assert.equal((await request()).status, 401, 'restricted user must be rejected');

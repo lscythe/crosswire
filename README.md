@@ -1,6 +1,6 @@
 # Crosswire
 
-Self-hosted team AI gateway. Includes admin-created users, mandatory first-login password changes, private/shared provider connections, routing, model probes, usage, and personal API keys.
+Self-hosted team AI gateway. Includes username/password login, admin-created users, mandatory first-login password changes, private/shared provider connections, routing, model probes, usage, and personal API keys.
 
 ## Local run
 
@@ -15,10 +15,10 @@ Create the first admin once:
 ```bash
 curl -X POST http://localhost:3000/api/auth/bootstrap \
   -H 'Content-Type: application/json' \
-  -d '{"email":"admin@example.com","password":"your-bootstrap-password"}'
+  -d '{"username":"admin","password":"your-bootstrap-password"}'
 ```
 
-Open `http://localhost:3000/login`. Run `./scripts/check-foundation.sh` with `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` set to verify the API flow.
+Open `http://localhost:3000/login`. Sign in with your username (default bootstrap username: `admin`). `BOOTSTRAP_ADMIN_EMAIL` remains the admin contact email. Existing accounts receive a username derived from the email local part; collisions receive a numeric suffix. Find assigned usernames on the Team page. Run `./scripts/check-foundation.sh` with `BOOTSTRAP_ADMIN_USERNAME` and `BOOTSTRAP_ADMIN_PASSWORD` set to verify the API flow.
 
 ## Browser checks
 

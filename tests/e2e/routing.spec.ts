@@ -6,7 +6,7 @@ test("personal routing CRUD, ordered fallback, isolation and request evidence", 
   const providerUrl = process.env.TEST_PROVIDER_URL!;
   const gateway = process.env.GATEWAY_URL ?? "http://localhost:8080";
   await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_EMAIL ?? "admin@example.com");
+  await page.getByLabel("Username", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin");
   await page.getByLabel("Password", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "replace-with-a-long-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -18,10 +18,10 @@ test("personal routing CRUD, ordered fallback, isolation and request evidence", 
   try {
     for (const context of [owner, other]) {
       const email = `routing-${randomUUID()}@example.com`;
-      const account = await (await page.request.post("/api/users", { data: { email } })).json();
-      expect((await context.request.post(`${base}/api/auth/login`, { data: { email, password: account.temporaryPassword } })).status()).toBe(200);
+      const account = await (await page.request.post("/api/users", { data: { username: email.split("@")[0], email } })).json();
+      expect((await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: account.temporaryPassword } })).status()).toBe(200);
       expect((await context.request.post(`${base}/api/auth/change-password`, { data: { password: "routing-member-password", confirmPassword: "routing-member-password" } })).status()).toBe(200);
-      await context.request.post(`${base}/api/auth/login`, { data: { email, password: "routing-member-password" } });
+      await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: "routing-member-password" } });
     }
     const keys = [];
     for (const context of [owner, other]) keys.push((await (await context.request.post(`${base}/api/keys`, { data: { name: "routing check" } })).json()).key);

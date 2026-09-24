@@ -5,7 +5,7 @@ test("public quotas are atomic across keys, isolated per user, visible to owners
   test.skip(!process.env.TEST_PROVIDER_URL, "Requires local fixture provider");
   const base = "http://localhost:3000";
   const gateway = process.env.GATEWAY_URL ?? "http://localhost:8080";
-  expect((await request.post(`${base}/api/auth/login`, { data: { email: process.env.BOOTSTRAP_ADMIN_EMAIL ?? "admin@example.com", password: process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "replace-with-a-long-password" } })).status()).toBe(200);
+  expect((await request.post(`${base}/api/auth/login`, { data: { username: process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin", password: process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "replace-with-a-long-password" } })).status()).toBe(200);
   const contexts = await Promise.all([browser.newContext(), browser.newContext()]);
   const names: string[] = [];
   const connectionIds: string[] = [];
@@ -14,10 +14,10 @@ test("public quotas are atomic across keys, isolated per user, visible to owners
   try {
     for (const [index, context] of contexts.entries()) {
       const email = `quota-${randomUUID()}@example.com`; names.push(email);
-      const account = await (await request.post(`${base}/api/users`, { data: { email } })).json();
-      await context.request.post(`${base}/api/auth/login`, { data: { email, password: account.temporaryPassword } });
+      const account = await (await request.post(`${base}/api/users`, { data: { username: email.split("@")[0], email } })).json();
+      await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: account.temporaryPassword } });
       await context.request.post(`${base}/api/auth/change-password`, { data: { password: "quota-test-password", confirmPassword: "quota-test-password" } });
-      await context.request.post(`${base}/api/auth/login`, { data: { email, password: "quota-test-password" } });
+      await context.request.post(`${base}/api/auth/login`, { data: { username: email.split("@")[0], password: "quota-test-password" } });
       keys.push({ ...await (await context.request.post(`${base}/api/keys`, { data: { name: "Quota test" } })).json(), user: index });
     }
     const owner = contexts[0].request;

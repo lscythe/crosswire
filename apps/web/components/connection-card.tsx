@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "@heroui/react";
+import { Button, Input, Card, Chip } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -47,10 +47,10 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
     event.preventDefault();
     void act("probe", String(new FormData(event.currentTarget).get("model")));
   }
-  return <article className="connection-card" aria-labelledby={`connection-${connection.id}`}>
+  return <Card role="article" className="connection-card" aria-labelledby={`connection-${connection.id}`}>
     <h3 id={`connection-${connection.id}`}>{connection.name}</h3>
     <p className="connection-url">{connection.base_url}</p>
-    <p>{connection.visibility === "public" ? "Public" : "Private"} · {connection.enabled ? "Enabled" : "Disabled"} · Last test: {connection.last_test_status ?? "untested"}</p>
+    <div className="connection-actions status-chips"><Chip size="sm" variant="soft" color="accent">{connection.visibility === "public" ? "Public" : "Private"}</Chip><Chip size="sm" variant="soft" color={connection.enabled ? "success" : "default"}>{connection.enabled ? "Enabled" : "Disabled"}</Chip><Chip size="sm" variant="soft" color={connection.last_test_status === "failed" ? "danger" : "default"}>Last test: {connection.last_test_status ?? "untested"}</Chip></div>
     {connection.visibility === "public" && <section aria-label="Public connection limits"><p>Per user: {connection.requests_per_minute} requests/minute · {connection.requests_per_day} requests/day (UTC).</p><p>Upstream attempts count even if they fail. Probes reserve two requests. Discovery and health checks do not count.</p>
       <details><summary>Daily quota usage</summary>{connection.quotaUsage.length ? <ul>{connection.quotaUsage.map(item => <li key={item.user}>{item.user}: {item.used} / {connection.requests_per_day}</li>)}</ul> : <p>No quota used today.</p>}</details>
     </section>}
@@ -62,7 +62,7 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
       <details><summary>Edit connection</summary><ConnectionForm connection={connection} onSaved={() => { setModels([]); setProbe(null); }} /></details>
     </> : <p>Shared connection. Only its owner or an admin can edit or test it.</p>}
     <form onSubmit={submitProbe}>
-      <label className="field">Model<input name="model" list={`models-${connection.id}`} placeholder="Enter a model ID" required maxLength={200} disabled={!connection.enabled || !!pending} /></label>
+      <label className="field">Model<Input name="model" list={`models-${connection.id}`} placeholder="Enter a model ID" required maxLength={200} disabled={!connection.enabled || !!pending} /></label>
       <datalist id={`models-${connection.id}`}>{models.map((model) => <option key={model} value={model} />)}</datalist>
       <p>Choose a suggested model after testing, or enter an ID. A probe sends two short requests to the provider.</p>
       <Button variant="secondary" type="submit" isDisabled={!connection.enabled || !!pending}>{pending === "probe" ? "Probing..." : "Run probe"}</Button>
@@ -77,5 +77,5 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
       <p>Provider-reported identity is evidence, not proof. This probe cannot cryptographically verify the model.</p>
       <details><summary>Probe evidence</summary>{result.checks.map((check, index) => <div key={`${check.capability}-${index}`}><h5>{check.capability}: {check.passed ? "passed" : "failed"}</h5><pre>{JSON.stringify(check.evidence, null, 2)}</pre></div>)}</details>
     </section>}
-  </article>;
+  </Card>;
 }

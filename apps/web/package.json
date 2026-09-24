@@ -8,6 +8,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@tabler/icons-react": "^3.48.0",

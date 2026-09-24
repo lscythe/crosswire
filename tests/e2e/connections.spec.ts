@@ -6,7 +6,7 @@ test("connection management preserves secrets and enforces ownership", async ({ 
   const stamp = Date.now();
   const name = `Provider ${stamp}`;
   await page.goto("/login");
-  await page.getByLabel("Email", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_EMAIL ?? "admin@example.com");
+  await page.getByLabel("Username", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_USERNAME ?? "admin");
   await page.getByLabel("Password", { exact: true }).fill(process.env.BOOTSTRAP_ADMIN_PASSWORD ?? "replace-with-a-long-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -15,11 +15,11 @@ test("connection management preserves secrets and enforces ownership", async ({ 
   const memberEmail = `connection-member-${stamp}@example.com`;
   let connectionId: string | undefined;
   try {
-    const created = await page.request.post("/api/users", { data: { email: memberEmail } });
+    const created = await page.request.post("/api/users", { data: { username: memberEmail.split("@")[0], email: memberEmail } });
     const account = await created.json();
-    await member.request.post(`${base}/api/auth/login`, { data: { email: memberEmail, password: account.temporaryPassword } });
+    await member.request.post(`${base}/api/auth/login`, { data: { username: memberEmail.split("@")[0], password: account.temporaryPassword } });
     await member.request.post(`${base}/api/auth/change-password`, { data: { password: "connection-member-password", confirmPassword: "connection-member-password" } });
-    await member.request.post(`${base}/api/auth/login`, { data: { email: memberEmail, password: "connection-member-password" } });
+    await member.request.post(`${base}/api/auth/login`, { data: { username: memberEmail.split("@")[0], password: "connection-member-password" } });
     await page.goto("/connections");
     await page.getByText("Add connection", { exact: true }).first().click();
     const createForm = page.locator("form").filter({ has: page.getByRole("button", { name: "Add connection", exact: true }) });

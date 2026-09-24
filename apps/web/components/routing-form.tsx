@@ -1,5 +1,5 @@
 "use client";
-import { Button } from "@heroui/react";
+import { Button, Input } from "@heroui/react";
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -39,16 +39,16 @@ export function RoutingForm({ connections, config }: { connections: Array<{ id: 
     } finally { setPending(false); }
   }
   return <form onSubmit={submit}><fieldset className="connection-fields" disabled={pending}>
-    <label className="field">Config name<input name="name" required maxLength={100} defaultValue={config?.name} /></label>
+    <label className="field">Config name<Input name="name" required maxLength={100} defaultValue={config?.name} /></label>
     <label><input type="checkbox" name="isDefault" defaultChecked={config?.is_default ?? false} /> Use as default</label>
     <p>Routes with the same alias are tried from top to bottom. Fallback occurs on transport errors or HTTP 5xx; other responses are returned directly.</p>
     {routes.map((route, index) => <fieldset className="route-row" key={index}><legend>Route {index + 1}</legend>
-      <label className="field">Model alias<input required maxLength={100} value={route.modelAlias} onChange={(event) => update(index, "modelAlias", event.target.value)} placeholder="team-chat" /></label>
+      <label className="field">Model alias<Input required maxLength={100} value={route.modelAlias} onChange={(event) => update(index, "modelAlias", event.target.value)} placeholder="team-chat" /></label>
       <label className="field">Connection<select required value={route.connectionId} onChange={(event) => update(index, "connectionId", event.target.value)}>
         {!connections.some((connection) => connection.id === route.connectionId) && <option value={route.connectionId} disabled>Unavailable connection — select another</option>}
         {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.name}</option>)}
       </select></label>
-      <label className="field">Upstream model<input required maxLength={200} value={route.upstreamModel} onChange={(event) => update(index, "upstreamModel", event.target.value)} /></label>
+      <label className="field">Upstream model<Input required maxLength={200} value={route.upstreamModel} onChange={(event) => update(index, "upstreamModel", event.target.value)} /></label>
       <div className="connection-actions"><Button variant="secondary" type="button" isDisabled={index === 0} onPress={() => move(index, -1)}>Move up</Button><Button variant="secondary" type="button" isDisabled={index === routes.length - 1} onPress={() => move(index, 1)}>Move down</Button><Button variant="secondary" type="button" isDisabled={routes.length === 1} onPress={() => setRoutes((current) => current.filter((_, i) => i !== index))}>Remove route</Button></div>
     </fieldset>)}
     <div className="connection-actions"><Button variant="secondary" type="button" isDisabled={routes.length >= 100 || !connections.length} onPress={() => setRoutes((current) => [...current, blank()])}>Add route</Button><Button variant="primary" type="submit" className="primary" isDisabled={!connections.length}>{pending ? "Saving..." : "Save routing"}</Button></div>

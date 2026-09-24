@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   const hash = await hashPassword(temporaryPassword);
   try {
     const user = await withTransaction(async (client) => {
-      const result = await client.query("INSERT INTO users(email, role, password_hash, must_change_password) VALUES ($1, $2, $3, true) RETURNING id, email, role", [body.data.email, body.data.role, hash]);
+      const result = await client.query("INSERT INTO users(username, email, role, password_hash, must_change_password) VALUES ($1, $2, $3, $4, true) RETURNING id, username, email, role", [body.data.username, body.data.email, body.data.role, hash]);
       await client.query("INSERT INTO audit_events(actor_user_id, action, resource_type, resource_id) VALUES ($1, 'user.created', 'user', $2)", [actor.id, result.rows[0].id]);
       return result.rows[0];
     });
