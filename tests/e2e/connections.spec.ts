@@ -38,15 +38,15 @@ test("connection management preserves secrets and enforces ownership", async ({
     await member.request.post(`${base}/api/auth/login`, {
       data: { username: memberEmail.split("@")[0], password: "connection-member-password" },
     });
-    await page.goto("/connections");
-    await page.getByText("Add connection", { exact: true }).first().click();
+    await page.goto("/providers");
+    await page.getByText("Add provider", { exact: true }).first().click();
     const createForm = page
       .locator("form")
-      .filter({ has: page.getByRole("button", { name: "Add connection", exact: true }) });
+      .filter({ has: page.getByRole("button", { name: "Add provider", exact: true }) });
     await createForm.getByLabel("Name", { exact: true }).fill(name);
     await createForm.getByLabel("Base URL", { exact: true }).fill(process.env.TEST_PROVIDER_URL!);
     await createForm.getByLabel("API key", { exact: true }).fill("connection-test-secret");
-    await page.getByRole("button", { name: "Add connection", exact: true }).click();
+    await page.getByRole("button", { name: "Add provider", exact: true }).click();
     const card = page
       .getByRole("article")
       .filter({ has: page.getByRole("heading", { name, exact: true }) });
@@ -60,21 +60,21 @@ test("connection management preserves secrets and enforces ownership", async ({
     expect(
       JSON.stringify(await (await member.request.get(`${base}/api/connections`)).json()),
     ).not.toContain(name);
-    await card.getByText("Edit connection", { exact: true }).click();
+    await card.getByText("Edit provider", { exact: true }).click();
     await expect(card.getByLabel("Replacement API key (optional)")).toHaveValue("");
     await card.getByLabel("Visibility").selectOption("public");
     await card.getByRole("button", { name: "Save changes" }).click();
     await expect(card.getByText("Changes saved", { exact: true })).toBeVisible();
-    await card.getByRole("button", { name: "Test connection", exact: true }).click();
+    await card.getByRole("button", { name: "Test provider", exact: true }).click();
     await expect(
-      card.getByText("Connection test passed. 1 models returned.", { exact: true }),
+      card.getByText("Provider test passed. 1 models returned.", { exact: true }),
     ).toBeVisible();
     await card.getByLabel("Replacement API key (optional)").fill("wrong-test-secret");
     await card.getByRole("button", { name: "Save changes" }).click();
     await expect(card.getByLabel("Replacement API key (optional)")).toHaveValue("");
-    await card.getByRole("button", { name: "Test connection", exact: true }).click();
+    await card.getByRole("button", { name: "Test provider", exact: true }).click();
     await expect(
-      card.getByText("Connection test failed (HTTP 401). Check the URL and credentials.", {
+      card.getByText("Provider test failed (HTTP 401). Check the URL and credentials.", {
         exact: true,
       }),
     ).toBeVisible();
@@ -99,7 +99,7 @@ test("connection management preserves secrets and enforces ownership", async ({
       .filter({ has: sharedPage.getByRole("heading", { name, exact: true }) });
     await expect(sharedCard).toBeVisible();
     await expect(sharedCard.getByRole("button", { name: "Disable", exact: true })).toHaveCount(0);
-    await expect(sharedCard.getByText("Edit connection", { exact: true })).toHaveCount(0);
+    await expect(sharedCard.getByText("Edit provider", { exact: true })).toHaveCount(0);
     expect(
       (
         await member.request.patch(`${base}/api/connections/${connectionId}`, {

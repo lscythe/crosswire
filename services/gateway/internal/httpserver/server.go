@@ -91,6 +91,13 @@ func New(conn *sql.DB, cache *redis.Client) http.Handler {
 				attempts = append(attempts, attempt)
 				continue
 			}
+			var ciphertext sql.NullString
+			if err := conn.QueryRowContext(req.Context(), "SELECT select_provider_key($1)", route.ConnectionID).Scan(&ciphertext); err != nil || !ciphertext.Valid {
+				attempt.Reason = "no enabled provider key available"
+				attempts = append(attempts, attempt)
+				continue
+			}
+			route.Ciphertext = ciphertext.String
 			var raw map[string]any
 			if json.Unmarshal(body, &raw) != nil {
 				http.Error(w, "invalid request", 400)

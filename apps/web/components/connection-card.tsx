@@ -3,7 +3,9 @@ import { Button, Card, Chip, Input } from "@heroui/react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import type { ProbeCheck } from "../lib/probe";
+import type { ProviderModel } from "../lib/provider-models";
 import { ConnectionForm } from "./connection-form";
+import type { KeyView } from "./provider-keys";
 
 type ProbeResult = {
   requestedModel: string;
@@ -26,7 +28,17 @@ export type ConnectionView = {
   latestProbe: ProbeResult | null;
 };
 
-export function ConnectionCard({ connection }: { connection: ConnectionView }) {
+export function ConnectionCard({
+  connection,
+  keys = [],
+  selectedKeyId,
+  catalog = [],
+}: {
+  connection: ConnectionView;
+  keys?: KeyView[];
+  selectedKeyId?: string | null;
+  catalog?: ProviderModel[];
+}) {
   const router = useRouter();
   const [pending, setPending] = useState("");
   const [error, setError] = useState("");
@@ -34,13 +46,18 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   const [models, setModels] = useState<string[]>([]);
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const result = probe ?? connection.latestProbe;
-  async function act(action: "toggle" | "test" | "probe", model?: string) {
+  async function act(
+    action: "toggle" | "test" | "probe",
+    model?: string,
+    keyId?: string,
+    capabilities?: string[],
+  ) {
     setPending(action);
     setError("");
     setMessage("");
     try {
       const response = await fetch(
-        `/api/connections/${connection.id}${action === "probe" ? "/probe" : ""}`,
+        `/api/providers/${connection.id}${action === "probe" ? "/probe" : ""}`,
         {
           method: action === "toggle" ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,7 +65,7 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
             action === "toggle"
               ? JSON.stringify({ enabled: !connection.enabled })
               : action === "probe"
-                ? JSON.stringify({ model })
+                ? JSON.stringify({ model, keyId, capabilities })
                 : undefined,
         },
       );
@@ -57,20 +74,20 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
         throw new Error(
           body.error ??
             (action === "test"
-              ? "Connection test failed. Check the URL and credentials."
+              ? "Provider test failed. Check the URL and credentials."
               : "Request failed. Try again."),
         );
       if (action === "test") {
         setModels(body.models ?? []);
         setMessage(
           body.ok
-            ? `Connection test passed. ${body.models.length} models returned.`
-            : `Connection test failed (HTTP ${body.status}). Check the URL and credentials.`,
+            ? `Provider test passed. ${body.models.length} models returned.`
+            : `Provider test failed (HTTP ${body.status}). Check the URL and credentials.`,
         );
       }
       if (action === "probe") setProbe(body);
       if (action === "toggle")
-        setMessage(connection.enabled ? "Connection disabled" : "Connection enabled");
+        setMessage(connection.enabled ? "Provider disabled" : "Provider enabled");
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Request failed. Try again.");
@@ -81,7 +98,13 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
   }
   function submitProbe(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void act("probe", String(new FormData(event.currentTarget).get("model")));
+    const data = new FormData(event.currentTarget);
+    void act(
+      "probe",
+      String(data.get("model")),
+      String(data.get("keyId")),
+      data.getAll("capabilities").map(String),
+    );
   }
   return (
     <Card
@@ -107,14 +130,14 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
         </Chip>
       </div>
       {connection.visibility === "public" && (
-        <section aria-label="Public connection limits">
+        <section aria-label="Public provider limits">
           <p>
             Per user: {connection.requests_per_minute} requests/minute ·{" "}
             {connection.requests_per_day} requests/day (UTC).
           </p>
           <p>
-            Upstream attempts count even if they fail. Probes reserve two requests. Discovery and
-            health checks do not count.
+            Upstream attempts count even if they fail. Each probe check counts as one request.
+            Discovery and health checks do not count.
           </p>
           <details>
             <summary>Daily quota usage</summary>
@@ -149,11 +172,11 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
               isDisabled={!!pending}
               onPress={() => act("test")}
             >
-              {pending === "test" ? "Testing..." : "Test connection"}
+              {pending === "test" ? "Testing..." : "Test provider"}
             </Button>
           </div>
           <details>
-            <summary>Edit connection</summary>
+            <summary>Edit provider</summary>
             <ConnectionForm
               connection={connection}
               onSaved={() => {
@@ -164,7 +187,7 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
           </details>
         </>
       ) : (
-        <p>Shared connection. Only its owner or an admin can edit or test it.</p>
+        <p>Shared provider. Only its owner or an admin can edit or test it.</p>
       )}
       <form onSubmit={submitProbe}>
         <label className="field">
@@ -179,18 +202,55 @@ export function ConnectionCard({ connection }: { connection: ConnectionView }) {
           />
         </label>
         <datalist id={`models-${connection.id}`}>
-          {models.map((model) => (
+          {[
+            ...new Set([
+              ...models,
+              ...catalog.filter((model) => model.enabled).map((model) => model.upstream_id),
+            ]),
+          ].map((model) => (
             <option key={model} value={model} />
           ))}
         </datalist>
+        <label className="field">
+          Probe using key
+          <select
+            name="keyId"
+            defaultValue={selectedKeyId ?? ""}
+            key={selectedKeyId}
+            required
+            disabled={!!pending}
+          >
+            <option value="" disabled>
+              Choose a key
+            </option>
+            {keys
+              .filter((key) => key.enabled)
+              .map((key) => (
+                <option key={key.id} value={key.id}>
+                  {key.name}
+                </option>
+              ))}
+          </select>
+        </label>
+        <fieldset disabled={!!pending}>
+          <legend>Capability checks</legend>
+          <div className="connection-actions">
+            {["chat", "streaming", "json", "tools"].map((capability) => (
+              <label key={capability}>
+                <input type="checkbox" name="capabilities" value={capability} defaultChecked />
+                {capability}
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <p>
-          Choose a suggested model after testing, or enter an ID. A probe sends two short requests
-          to the provider.
+          One short request per selected check. JSON and tools may be unsupported; results never
+          overwrite model configuration.
         </p>
         <Button variant="secondary" type="submit" isDisabled={!connection.enabled || !!pending}>
           {pending === "probe" ? "Probing..." : "Run probe"}
         </Button>
-        {!connection.enabled && <p>Enable this connection before probing.</p>}
+        {!connection.enabled && <p>Enable this provider before probing.</p>}
       </form>
       {message && <p role="status">{message}</p>}
       {error && (

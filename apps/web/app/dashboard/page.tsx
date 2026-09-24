@@ -209,14 +209,14 @@ export default async function DashboardPage({
             <div>
               <h3>
                 <IconPlugConnected size={19} aria-hidden="true" />
-                Connections
+                Providers
               </h3>
               <p>
                 {connections.rows.filter((connection) => connection.enabled).length} enabled of{" "}
                 {connections.rows.length} visible
               </p>
             </div>
-            <Link className="icon-link" href="/connections" aria-label="Manage connections">
+            <Link className="icon-link" href="/providers" aria-label="Manage providers">
               <IconArrowUpRight size={20} aria-hidden="true" />
             </Link>
           </div>
@@ -268,8 +268,8 @@ export default async function DashboardPage({
           ) : (
             <div className="empty-state">
               <IconPlugConnected size={30} aria-hidden="true" />
-              <p>No connections available.</p>
-              <Link href="/connections">
+              <p>No providers available.</p>
+              <Link href="/providers">
                 Add a provider
                 <IconArrowRight size={16} aria-hidden="true" />
               </Link>
@@ -321,7 +321,7 @@ export default async function DashboardPage({
             <div className="empty-state">
               <IconShieldCheck size={30} aria-hidden="true" />
               <p>No probe results available.</p>
-              <Link href="/connections">
+              <Link href="/providers">
                 Run a model probe
                 <IconArrowRight size={16} aria-hidden="true" />
               </Link>

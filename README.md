@@ -1,6 +1,6 @@
 # Crosswire
 
-Self-hosted team AI gateway. Includes username/password login, admin-created users, mandatory first-login password changes, private/shared provider connections, routing, model probes, usage, and personal API keys.
+Self-hosted team AI gateway. Includes username/password login, admin-created users, mandatory first-login password changes, private/shared providers, provider API-key rotation, imported model catalogs, routing, model probes, usage, and personal API keys.
 
 ## Local run
 
@@ -34,7 +34,7 @@ Then run in another terminal:
 TEST_PROVIDER_URL=http://web:4100/v1 pnpm test:e2e
 ```
 
-This checks connection editing, secret preservation, sharing, permission enforcement, persisted probe results, routing fallback, and user isolation without external provider calls. Set the bootstrap admin environment variables when using custom credentials.
+This checks provider editing, secret preservation, sharing, permission enforcement, persisted probe results, routing fallback, and user isolation without external provider calls. Set the bootstrap admin environment variables when using custom credentials.
 
 ## Dokploy
 

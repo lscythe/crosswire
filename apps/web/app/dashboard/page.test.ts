@@ -39,7 +39,7 @@ it("renders empty states without invented success or latency", async () => {
   results();
   const html = renderToStaticMarkup(await DashboardPage({ searchParams: Promise.resolve({}) }));
   expect(html).toContain("No requests in the last 24 hours");
-  expect(html).toContain("No connections available");
+  expect(html).toContain("No providers available");
   expect(html).toContain("No probe results available");
   expect(html).not.toContain("100%");
 });

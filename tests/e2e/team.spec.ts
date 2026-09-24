@@ -53,7 +53,7 @@ test("admin creates a user who must replace the temporary password", async ({ pa
     await expect(member).toHaveURL(/\/change-password$/);
     const oldSession = await browser.newContext({ storageState: await context.storageState() });
     try {
-      for (const path of ["/dashboard", "/team", "/connections", "/routing", "/usage", "/probes"]) {
+      for (const path of ["/dashboard", "/team", "/providers", "/routing", "/usage", "/probes"]) {
         await member.goto(`${base}${path}`);
         await expect(member).toHaveURL(/\/change-password$/);
       }

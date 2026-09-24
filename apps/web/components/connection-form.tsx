@@ -33,7 +33,7 @@ export function ConnectionForm({
     setError("");
     try {
       const response = await fetch(
-        connection ? `/api/connections/${connection.id}` : "/api/connections",
+        connection ? `/api/providers/${connection.id}` : "/api/providers",
         {
           method: connection ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -48,14 +48,16 @@ export function ConnectionForm({
         },
       );
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "Could not save connection");
-      if (!connection) element.reset();
-      else (element.elements.namedItem("apiKey") as HTMLInputElement).value = "";
-      setMessage(connection ? "Changes saved" : "Connection created");
+      if (!response.ok) throw new Error(body.error ?? "Could not save provider");
+      if (!connection) {
+        element.reset();
+        router.push(`/providers/${body.id}`);
+      } else (element.elements.namedItem("apiKey") as HTMLInputElement).value = "";
+      setMessage(connection ? "Changes saved" : "Provider created");
       onSaved?.();
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save connection");
+      setError(cause instanceof Error ? cause.message : "Could not save provider");
     } finally {
       setPending(false);
     }
@@ -96,8 +98,8 @@ export function ConnectionForm({
           </select>
         </label>
         <p>
-          Public connections: limits apply per user, across all their API keys. Daily quota resets
-          at midnight UTC. Private connections are unlimited.
+          Public providers: limits apply per user, across all their API keys. Daily quota resets at
+          midnight UTC. Private providers are unlimited.
         </p>
         <label className="field">
           Requests per minute per user
@@ -122,7 +124,7 @@ export function ConnectionForm({
           />
         </label>
         <Button variant="primary" type="submit" className="primary">
-          {pending ? "Saving..." : connection ? "Save changes" : "Add connection"}
+          {pending ? "Saving..." : connection ? "Save changes" : "Test and add provider"}
         </Button>
       </fieldset>
       {message && <p role="status">{message}</p>}

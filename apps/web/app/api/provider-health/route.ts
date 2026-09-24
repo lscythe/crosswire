@@ -12,7 +12,7 @@ export async function GET() {
     base_url: string;
     api_key_ciphertext: string;
   }>(
-    "SELECT DISTINCT c.id, c.name, c.base_url, c.api_key_ciphertext FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id JOIN connections c ON c.id = r.connection_id WHERE cfg.owner_user_id = $1 AND cfg.is_default AND c.enabled AND (c.owner_user_id = $1 OR c.visibility = 'public')",
+    "SELECT DISTINCT c.id, c.name, c.base_url, k.ciphertext AS api_key_ciphertext FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id JOIN connections c ON c.id = r.connection_id JOIN provider_keys k ON k.provider_id = c.id AND k.id = c.selected_key_id AND k.enabled WHERE cfg.owner_user_id = $1 AND cfg.is_default AND c.enabled AND (c.owner_user_id = $1 OR c.visibility = 'public')",
     [user.id],
   );
   const providers = await Promise.all(

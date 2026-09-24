@@ -3,7 +3,8 @@ import { recordAudit } from "../../../../lib/audit";
 import { currentUser } from "../../../../lib/auth";
 import { connectionUpdateSchema, isSafeProviderUrl } from "../../../../lib/connections";
 import { query } from "../../../../lib/db";
-import { decryptSecret, encryptSecret } from "../../../../lib/secrets";
+import { discoverWithKey, providerAccess } from "../../../../lib/providers";
+import { encryptSecret } from "../../../../lib/secrets";
 
 async function owned(id: string, user: { id: string; role: "admin" | "member" }) {
   const result = await query<{ owner_user_id: string }>(
@@ -24,18 +25,23 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   if (body.baseUrl && !isSafeProviderUrl(body.baseUrl))
     return NextResponse.json({ error: "provider URL is not allowed" }, { status: 400 });
   await query(
-    "UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), api_key_ciphertext = COALESCE($3, api_key_ciphertext), visibility = COALESCE($4, visibility), enabled = COALESCE($5, enabled), requests_per_minute = COALESCE($6, requests_per_minute), requests_per_day = COALESCE($7, requests_per_day), updated_at = now() WHERE id = $8",
+    "UPDATE connections SET name = COALESCE($1, name), base_url = COALESCE($2, base_url), visibility = COALESCE($3, visibility), enabled = COALESCE($4, enabled), requests_per_minute = COALESCE($5, requests_per_minute), requests_per_day = COALESCE($6, requests_per_day), updated_at = now() WHERE id = $8 AND $7 IS NULL",
     [
       body.name ?? null,
       body.baseUrl ?? null,
-      body.apiKey ? encryptSecret(body.apiKey) : null,
       body.visibility ?? null,
       body.enabled ?? null,
       body.requestsPerMinute ?? null,
       body.requestsPerDay ?? null,
+      null,
       id,
     ],
   );
+  if (body.apiKey)
+    await query(
+      "UPDATE provider_keys SET ciphertext = $1, last_test_status = NULL WHERE provider_id = $2 AND id = (SELECT selected_key_id FROM connections WHERE id = $2)",
+      [encryptSecret(body.apiKey), id],
+    );
   await recordAudit(user.id, "connection.updated", "connection", id);
   return NextResponse.json({ ok: true });
 }
@@ -54,37 +60,16 @@ export async function POST(_request: Request, context: { params: Promise<{ id: s
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const { id } = await context.params;
-  const result = await query<{
-    owner_user_id: string;
-    base_url: string;
-    api_key_ciphertext: string;
-    enabled: boolean;
-  }>("SELECT owner_user_id, base_url, api_key_ciphertext, enabled FROM connections WHERE id = $1", [
-    id,
-  ]);
-  const connection = result.rows[0];
+  const connection = await providerAccess(id, user, true);
   if (!connection || (user.role !== "admin" && connection.owner_user_id !== user.id))
     return NextResponse.json({ error: "not found" }, { status: 404 });
   try {
-    const response = await fetch(`${connection.base_url.replace(/\/$/, "")}/models`, {
-      headers: { Authorization: `Bearer ${decryptSecret(connection.api_key_ciphertext)}` },
-      redirect: "error",
-      signal: AbortSignal.timeout(10000),
-    });
+    const { models } = await discoverWithKey(connection);
     await query(
-      "UPDATE connections SET last_tested_at = now(), last_test_status = $1 WHERE id = $2",
-      [response.ok ? "passed" : "failed", id],
+      "UPDATE connections SET last_tested_at = now(), last_test_status = 'passed' WHERE id = $1",
+      [id],
     );
-    const payload = response.ok ? await response.json().catch(() => null) : null;
-    const models = Array.isArray(payload?.data)
-      ? payload.data
-          .flatMap((model: unknown) => {
-            const id = model && typeof model === "object" && "id" in model ? model.id : null;
-            return typeof id === "string" && id.length > 0 && id.length <= 200 ? [id] : [];
-          })
-          .slice(0, 500)
-      : [];
-    return NextResponse.json({ ok: response.ok, status: response.status, models });
+    return NextResponse.json({ ok: true, status: 200, models: models.map((model) => model.id) });
   } catch {
     await query(
       "UPDATE connections SET last_tested_at = now(), last_test_status = 'failed' WHERE id = $1",

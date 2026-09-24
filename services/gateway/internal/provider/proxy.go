@@ -15,10 +15,11 @@ import (
 type Route struct{ ConnectionID, ConnectionName, BaseURL, Ciphertext, UpstreamModel string }
 
 func LoadRoutes(ctx context.Context, db *sql.DB, userID, alias string) ([]Route, error) {
-	rows, err := db.QueryContext(ctx, `SELECT c.id, c.name, c.base_url, c.api_key_ciphertext, r.upstream_model
+	rows, err := db.QueryContext(ctx, `SELECT c.id, c.name, c.base_url, r.upstream_model
 		FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id
 		JOIN connections c ON c.id = r.connection_id
 		WHERE cfg.owner_user_id = $1 AND (c.owner_user_id = $1 OR c.visibility = 'public') AND cfg.is_default AND r.model_alias = $2 AND c.enabled
+		AND NOT EXISTS (SELECT 1 FROM provider_models m WHERE m.provider_id = c.id AND m.upstream_id = r.upstream_model AND NOT m.enabled)
 		ORDER BY r.priority`, userID, alias)
 	if err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func LoadRoutes(ctx context.Context, db *sql.DB, userID, alias string) ([]Route,
 	var routes []Route
 	for rows.Next() {
 		var route Route
-		if err := rows.Scan(&route.ConnectionID, &route.ConnectionName, &route.BaseURL, &route.Ciphertext, &route.UpstreamModel); err != nil {
+		if err := rows.Scan(&route.ConnectionID, &route.ConnectionName, &route.BaseURL, &route.UpstreamModel); err != nil {
 			return nil, err
 		}
 		routes = append(routes, route)
@@ -97,7 +98,9 @@ func LoadModels(ctx context.Context, db *sql.DB, userID string) ([]Model, error)
  FROM routing_configs cfg JOIN routing_routes r ON r.config_id = cfg.id
  JOIN connections c ON c.id = r.connection_id
  WHERE cfg.owner_user_id = $1 AND cfg.is_default AND c.enabled
- AND (c.owner_user_id = $1 OR c.visibility = 'public') ORDER BY r.model_alias`, userID)
+ AND (c.owner_user_id = $1 OR c.visibility = 'public')
+ AND EXISTS (SELECT 1 FROM provider_keys k WHERE k.provider_id = c.id AND k.enabled AND (c.key_mode = 'round_robin' OR k.id = c.selected_key_id))
+ AND NOT EXISTS (SELECT 1 FROM provider_models m WHERE m.provider_id = c.id AND m.upstream_id = r.upstream_model AND NOT m.enabled) ORDER BY r.model_alias`, userID)
 	if err != nil {
 		return nil, err
 	}

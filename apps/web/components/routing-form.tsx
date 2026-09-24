@@ -101,7 +101,7 @@ export function RoutingForm({
               />
             </label>
             <label className="field">
-              Connection
+              Provider
               <select
                 required
                 value={route.connectionId}
@@ -174,7 +174,7 @@ export function RoutingForm({
             {pending ? "Saving..." : "Save routing"}
           </Button>
         </div>
-        {!connections.length && <p>Add or enable a connection before saving routes.</p>}
+        {!connections.length && <p>Add or enable a provider before saving routes.</p>}
       </fieldset>
       {message && <p role="status">{message}</p>}
       {error && (

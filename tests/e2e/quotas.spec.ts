@@ -118,7 +118,7 @@ test("public quotas are atomic across keys, isolated per user, visible to owners
     await card.getByText("Daily quota usage", { exact: true }).click();
     await expect(card.getByText(`${names[0]}: 2 / 2`, { exact: true })).toBeVisible();
     await expect(card.getByText(`${names[1]}: 1 / 2`, { exact: true })).toBeVisible();
-    await card.getByText("Edit connection", { exact: true }).click();
+    await card.getByText("Edit provider", { exact: true }).click();
     await card.getByLabel("Requests per minute per user").fill("90");
     await card.getByRole("button", { name: "Save changes" }).click();
     await expect(card.getByText("Changes saved", { exact: true })).toBeVisible();
